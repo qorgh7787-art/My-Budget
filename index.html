@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="영선가계부">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png" type="image/png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-maskable-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
@@ -386,21 +386,21 @@
 
   async function loadData(){
     try{
-      const res = await window.storage.get(STORAGE_KEY, false);
-      if(res && res.value) state.entries = JSON.parse(res.value);
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) state.entries = JSON.parse(raw);
     }catch(e){ state.entries = []; }
     try{
-      const res2 = await window.storage.get(CAT_KEY, false);
-      if(res2 && res2.value) state.categories = JSON.parse(res2.value);
+      const raw2 = localStorage.getItem(CAT_KEY);
+      if(raw2) state.categories = JSON.parse(raw2);
     }catch(e){ /* keep defaults */ }
   }
 
   async function saveEntries(){
-    try{ await window.storage.set(STORAGE_KEY, JSON.stringify(state.entries), false); }
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries)); }
     catch(e){ console.error('save entries failed', e); }
   }
   async function saveCategories(){
-    try{ await window.storage.set(CAT_KEY, JSON.stringify(state.categories), false); }
+    try{ localStorage.setItem(CAT_KEY, JSON.stringify(state.categories)); }
     catch(e){ console.error('save categories failed', e); }
   }
 

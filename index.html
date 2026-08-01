@@ -183,10 +183,10 @@
   .list-hint{ font-size:11.5px; color: var(--text-soft); margin-bottom:10px; line-height:1.4; }
   .record-list{ display:flex; flex-direction:column; gap:8px; max-height: 320px; overflow-y:auto; }
   .record-item{
-    display:flex; align-items:center; gap:10px; padding:10px 8px; border-radius:12px; background: var(--card-soft);
+    display:flex; align-items:flex-start; gap:10px; padding:12px 10px; border-radius:12px; background: var(--card-soft);
   }
   .record-item .chk{
-    width:18px; height:18px; flex-shrink:0; accent-color: var(--accent-deep); cursor:pointer;
+    width:18px; height:18px; flex-shrink:0; accent-color: var(--accent-deep); cursor:pointer; margin-top:10px;
   }
   .record-item .badge{
     width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
@@ -194,22 +194,25 @@
   }
   .record-item.income .badge{ background: var(--income-bg); color: var(--income); }
   .record-item.expense .badge{ background: var(--expense-bg); color: var(--expense); }
-  .record-item .info{ flex:1; min-width:0; }
+  .record-item .info{ flex:1 1 auto; min-width:0; padding-top:2px; }
   .record-item .info .cat{
-    font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-size:14px; font-weight:700; white-space:normal; overflow-wrap:anywhere; line-height:1.4;
   }
   .record-item .info .meta{
-    font-size:11.5px; color: var(--text-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-size:11.5px; color: var(--text-soft); margin-top:3px; white-space:normal; overflow-wrap:anywhere;
   }
-  .record-item .amt{ font-size:14.5px; font-weight:800; white-space:nowrap; }
+  .record-item .amt{
+    font-size:14.5px; font-weight:800; white-space:normal; overflow-wrap:anywhere; text-align:right;
+    flex-shrink:0; max-width:34%; padding-top:2px;
+  }
   .record-item.income .amt{ color: var(--income); }
   .record-item.expense .amt{ color: var(--expense); }
   .record-item .del{
-    border:none; background:none; color:#b9cbd4; font-size:16px; cursor:pointer; padding:2px 4px; flex-shrink:0;
+    border:none; background:none; color:#b9cbd4; font-size:16px; cursor:pointer; padding:2px 4px; flex-shrink:0; margin-top:2px;
   }
   .record-item .del:hover{ color: var(--expense); }
   .record-item .edit{
-    border:none; background:none; color:#b9cbd4; font-size:15px; cursor:pointer; padding:2px 4px; flex-shrink:0;
+    border:none; background:none; color:#b9cbd4; font-size:15px; cursor:pointer; padding:2px 4px; flex-shrink:0; margin-top:2px;
   }
   .record-item .edit:hover{ color: var(--accent-deep); }
 
@@ -275,6 +278,16 @@
   .legend-row span{ display:inline-flex; align-items:center; gap:5px;}
   .legend-row i{ width:9px; height:9px; border-radius:3px; display:inline-block;}
 
+  .cat-chart-wrap{ height:200px; margin-bottom:16px; }
+  .cat-breakdown-list{ display:flex; flex-direction:column; gap:12px; }
+  .cat-row-item{ display:flex; align-items:center; gap:8px; }
+  .cat-row-item .dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .cat-row-item .name{ flex:1; font-size:13.5px; font-weight:700; color: var(--text); min-width:0; overflow-wrap:anywhere; }
+  .cat-row-item .amt{ font-size:13.5px; font-weight:800; color: var(--text); flex-shrink:0; }
+  .cat-row-item .pct{ font-size:11.5px; color: var(--text-soft); width:38px; text-align:right; flex-shrink:0; }
+  .cat-bar-track{ height:6px; border-radius:3px; background: var(--card-soft); overflow:hidden; margin-top:6px; }
+  .cat-bar-fill{ height:100%; border-radius:3px; }
+
   ::-webkit-scrollbar{ width:6px; }
   ::-webkit-scrollbar-thumb{ background: var(--accent-pale); border-radius:10px; }
 
@@ -286,117 +299,190 @@
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   .toast.error{ background: var(--expense); }
+
+  /* Page navigation */
+  .page{ display:none; }
+  .page.active-page{ display:block; }
+  .sub-page{ display:none; }
+  .sub-page.active-sub{ display:block; }
+
+  .sub-tab-toggle{
+    display:flex; gap:6px; background: var(--card); border:1px solid var(--line);
+    border-radius:14px; padding:5px; margin-bottom:16px; box-shadow: 0 6px 18px -10px rgba(31,127,179,0.18);
+  }
+  .sub-tab-toggle button{
+    flex:1; border:none; background:transparent; color: var(--text-soft); font-size:12.5px; font-weight:700;
+    padding:9px 4px; border-radius:10px; cursor:pointer;
+  }
+  .sub-tab-toggle button.active{ background: var(--accent-deep); color:#fff; }
+
+  body{ padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+
+  .bottom-nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:1000;
+    display:flex; background: rgba(255,255,255,0.92); backdrop-filter: blur(10px);
+    border-top:1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 20px -10px rgba(31,127,179,0.25);
+  }
+  .nav-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+    border:none; background:transparent; color: var(--text-soft); font-family:inherit;
+    padding:6px 0; border-radius:12px; cursor:pointer;
+  }
+  .nav-btn .nav-icon{ font-size:19px; line-height:1; }
+  .nav-btn .nav-label{ font-size:11px; font-weight:700; }
+  .nav-btn.active{ color: var(--accent-deep); }
+  .nav-btn.active .nav-icon{ transform: scale(1.08); }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="passbook">
-    <button type="button" class="install-btn" id="installBtn">📲 앱 설치하기</button>
-    <div class="eyebrow">MY LEDGER · 나만의 통장</div>
-    <h1>나만의 가계부</h1>
-    <div class="balance-row">
-      <div>
-        <div class="label">현재 잔액</div>
-        <div class="balance-num" id="balanceNum">0원</div>
+  <!-- HOME PAGE -->
+  <div class="page active-page" id="page-home">
+    <div class="passbook">
+      <button type="button" class="install-btn" id="installBtn">📲 앱 설치하기</button>
+      <div class="eyebrow">MY LEDGER · 나만의 통장</div>
+      <h1>나만의 가계부</h1>
+      <div class="balance-row">
+        <div>
+          <div class="label">현재 잔액</div>
+          <div class="balance-num" id="balanceNum">0원</div>
+        </div>
       </div>
-    </div>
-    <div class="mini-stats">
-      <div class="mini-stat"><div class="l">이번 달 수입</div><div class="v" id="monthIncome">0원</div></div>
-      <div class="mini-stat"><div class="l">이번 달 지출</div><div class="v" id="monthExpense">0원</div></div>
-    </div>
-  </div>
-
-  <div class="ios-hint" id="iosHint">
-    📱 아이폰에서 설치하기: 하단 공유 버튼<span class="ios-share-icon">⬆️</span>을 누른 뒤 <b>"홈 화면에 추가"</b>를 선택하세요.
-  </div>
-
-  <!-- Entry form -->
-  <div class="card">
-    <h2><span class="dot"></span>기록 추가하기</h2>
-    <div class="edit-banner" id="editBanner">
-      <span>기록을 수정하는 중이에요</span>
-      <button type="button" id="cancelEditBtn">취소</button>
-    </div>
-    <div class="type-toggle">
-      <button data-type="income" class="active">수입</button>
-      <button data-type="expense">지출</button>
-    </div>
-
-    <div class="field">
-      <label>카테고리</label>
-      <div class="cat-row">
-        <select id="catSelect"></select>
-        <button type="button" class="cat-add-btn" id="catAddToggle" title="카테고리 추가">＋</button>
-      </div>
-      <div class="new-cat-row" id="newCatRow">
-        <input type="text" id="newCatInput" placeholder="새 카테고리 이름 입력">
-        <button type="button" id="newCatSave">추가</button>
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="l">이번 달 수입</div><div class="v" id="monthIncome">0원</div></div>
+        <div class="mini-stat"><div class="l">이번 달 지출</div><div class="v" id="monthExpense">0원</div></div>
       </div>
     </div>
 
-    <div class="field">
-      <label>금액</label>
-      <input type="text" id="amountInput" inputmode="numeric" placeholder="0">
-    </div>
-
-    <div class="field">
-      <label>날짜</label>
-      <input type="date" id="dateInput">
-    </div>
-
-    <div class="field">
-      <label>메모 (선택)</label>
-      <input type="text" id="memoInput" placeholder="예: 스타벅스, 용돈 등">
-    </div>
-
-    <button class="save-btn income-mode" id="saveBtn">저장하기</button>
-  </div>
-
-  <!-- Calendar -->
-  <div class="card">
-    <h2><span class="dot"></span>달력으로 보기</h2>
-    <div class="cal-header">
-      <button type="button" class="cal-nav" id="calPrev">‹</button>
-      <div class="cal-month-label" id="calMonthLabel"></div>
-      <button type="button" class="cal-nav" id="calNext">›</button>
-    </div>
-    <div class="cal-weekdays">
-      <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-    <div class="cal-filter-row" id="calFilterRow" style="display:none;">
-      <span id="calFilterLabel"></span>
-      <button type="button" id="calClearFilter">전체보기</button>
+    <div class="ios-hint" id="iosHint">
+      📱 아이폰에서 설치하기: 하단 공유 버튼<span class="ios-share-icon">⬆️</span>을 누른 뒤 <b>"홈 화면에 추가"</b>를 선택하세요.
     </div>
   </div>
 
-  <!-- Records -->
-  <div class="card">
-    <h2><span class="dot"></span>기록 보기</h2>
-    <div class="list-toolbar">
-      <label class="select-all-label"><input type="checkbox" class="chk" id="selectAllChk">전체 선택</label>
-      <button type="button" class="bulk-del-btn" id="bulkDelBtn">선택 삭제 (0)</button>
+  <!-- RECORD PAGE (calendar on top, add-entry form below) -->
+  <div class="page" id="page-record">
+    <!-- Calendar -->
+    <div class="card">
+      <h2><span class="dot"></span>달력으로 보기</h2>
+      <div class="cal-header">
+        <button type="button" class="cal-nav" id="calPrev">‹</button>
+        <div class="cal-month-label" id="calMonthLabel"></div>
+        <button type="button" class="cal-nav" id="calNext">›</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-filter-row" id="calFilterRow" style="display:none;">
+        <span id="calFilterLabel"></span>
+        <button type="button" id="calClearFilter">전체보기</button>
+      </div>
     </div>
-    <div class="list-hint">체크박스로 기록을 선택한 뒤 '선택 삭제' 버튼을 누르면 한 번에 지울 수 있어요.</div>
-    <div class="record-list" id="recordList"></div>
+
+    <!-- Entry form -->
+    <div class="card">
+      <h2><span class="dot"></span>기록 추가하기</h2>
+      <div class="edit-banner" id="editBanner">
+        <span>기록을 수정하는 중이에요</span>
+        <button type="button" id="cancelEditBtn">취소</button>
+      </div>
+      <div class="type-toggle" id="entryTypeToggle">
+        <button data-type="income" class="active">수입</button>
+        <button data-type="expense">지출</button>
+      </div>
+
+      <div class="field">
+        <label>카테고리</label>
+        <div class="cat-row">
+          <select id="catSelect"></select>
+          <button type="button" class="cat-add-btn" id="catAddToggle" title="카테고리 추가">＋</button>
+        </div>
+        <div class="new-cat-row" id="newCatRow">
+          <input type="text" id="newCatInput" placeholder="새 카테고리 이름 입력">
+          <button type="button" id="newCatSave">추가</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>금액</label>
+        <input type="text" id="amountInput" inputmode="numeric" placeholder="0">
+      </div>
+
+      <div class="field">
+        <label>날짜</label>
+        <input type="date" id="dateInput">
+      </div>
+
+      <div class="field">
+        <label>메모 (선택)</label>
+        <input type="text" id="memoInput" placeholder="예: 스타벅스, 용돈 등">
+      </div>
+
+      <button class="save-btn income-mode" id="saveBtn">저장하기</button>
+    </div>
   </div>
 
-  <!-- Graph -->
-  <div class="card">
-    <h2><span class="dot"></span>그래프로 보기</h2>
-    <div class="period-toggle">
-      <button data-period="day" class="active">일간</button>
-      <button data-period="week">주간</button>
-      <button data-period="month">월간</button>
+  <!-- GRAPH PAGE (sub-tabs: 기록 보기 / 그래프 보기 / 카테고리별 보기) -->
+  <div class="page" id="page-graph">
+    <div class="sub-tab-toggle" id="graphSubTabToggle">
+      <button data-sub="records" class="active">기록 보기</button>
+      <button data-sub="chart">그래프 보기</button>
+      <button data-sub="category">카테고리별 보기</button>
     </div>
-    <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
-    <div class="legend-row">
-      <span><i style="background:var(--income)"></i>수입</span>
-      <span><i style="background:var(--expense)"></i>지출</span>
+
+    <div class="sub-page active-sub" id="subpage-records">
+      <div class="card">
+        <h2><span class="dot"></span>기록 보기</h2>
+        <div class="list-toolbar">
+          <label class="select-all-label"><input type="checkbox" class="chk" id="selectAllChk">전체 선택</label>
+          <button type="button" class="bulk-del-btn" id="bulkDelBtn">선택 삭제 (0)</button>
+        </div>
+        <div class="list-hint">체크박스로 기록을 선택한 뒤 '선택 삭제' 버튼을 누르면 한 번에 지울 수 있어요.</div>
+        <div class="record-list" id="recordList"></div>
+      </div>
+    </div>
+
+    <div class="sub-page" id="subpage-chart">
+      <div class="card">
+        <h2><span class="dot"></span>그래프로 보기</h2>
+        <div class="period-toggle" id="graphPeriodToggle">
+          <button data-period="day" class="active">일간</button>
+          <button data-period="week">주간</button>
+          <button data-period="month">월간</button>
+        </div>
+        <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+        <div class="legend-row">
+          <span><i style="background:var(--income)"></i>수입</span>
+          <span><i style="background:var(--expense)"></i>지출</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-page" id="subpage-category">
+      <div class="card">
+        <h2><span class="dot"></span>카테고리별 보기</h2>
+        <div class="type-toggle" id="catViewTypeToggle">
+          <button data-type="income" class="active">수입</button>
+          <button data-type="expense">지출</button>
+        </div>
+        <div class="period-toggle" id="catViewPeriodToggle">
+          <button data-catperiod="month" class="active">이번 달</button>
+          <button data-catperiod="all">전체 기간</button>
+        </div>
+        <div class="chart-wrap cat-chart-wrap"><canvas id="catChart"></canvas></div>
+        <div class="cat-breakdown-list" id="catBreakdownList"></div>
+      </div>
     </div>
   </div>
 
+</div>
+
+<div class="bottom-nav" id="bottomNav">
+  <button type="button" class="nav-btn active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">홈화면</span></button>
+  <button type="button" class="nav-btn" data-page="record"><span class="nav-icon">🧾</span><span class="nav-label">기록</span></button>
+  <button type="button" class="nav-btn" data-page="graph"><span class="nav-icon">📊</span><span class="nav-label">그래프</span></button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -419,7 +505,9 @@
     selectedIds: new Set(),
     selectedDate: null,
     calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    editingId: null
+    editingId: null,
+    catViewType: 'income',
+    catViewPeriod: 'month'
   };
 
   const $ = (id) => document.getElementById(id);
@@ -487,7 +575,7 @@
 
   function setType(type){
     state.currentType = type;
-    document.querySelectorAll('.type-toggle button').forEach(b=>{
+    document.querySelectorAll('#entryTypeToggle button').forEach(b=>{
       b.classList.toggle('active', b.dataset.type === type);
     });
     const btn = $('saveBtn');
@@ -497,7 +585,7 @@
 
   function setPeriod(period){
     state.currentPeriod = period;
-    document.querySelectorAll('.period-toggle button').forEach(b=>{
+    document.querySelectorAll('#graphPeriodToggle button').forEach(b=>{
       b.classList.toggle('active', b.dataset.period === period);
     });
     renderChart();
@@ -731,19 +819,147 @@
     });
   }
 
+  const CAT_PALETTE = ['#3fa9e0','#24b47e','#ff7a68','#f4a940','#8e7cc3','#4fd1c5','#f472b6','#94a3b8','#60a5fa','#facc15'];
+  let catChartInstance = null;
+  let catChartRetryCount = 0;
+
+  function renderCategoryBreakdown(){
+    if(typeof Chart === 'undefined'){
+      if(catChartRetryCount < 30){
+        catChartRetryCount++;
+        setTimeout(renderCategoryBreakdown, 300);
+      }
+      return;
+    }
+    catChartRetryCount = 0;
+
+    const type = state.catViewType;
+    const period = state.catViewPeriod;
+    const ym = todayStr().slice(0,7);
+
+    const filtered = state.entries.filter(e => e.type === type && (period === 'all' || e.date.slice(0,7) === ym));
+    const totals = {};
+    filtered.forEach(e => { totals[e.category] = (totals[e.category] || 0) + e.amount; });
+    const rows = Object.entries(totals)
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a,b) => b.amount - a.amount);
+    const grandTotal = rows.reduce((s,r) => s + r.amount, 0);
+
+    const wrap = $('catChart').parentElement;
+    const existingMsg = wrap.querySelector('.empty-msg');
+    if(existingMsg) existingMsg.remove();
+
+    if(catChartInstance){ catChartInstance.destroy(); catChartInstance = null; }
+
+    if(rows.length === 0){
+      $('catChart').style.display = 'none';
+      const msg = document.createElement('div');
+      msg.className = 'empty-msg';
+      msg.textContent = period === 'month' ? '이번 달 기록이 아직 없어요.' : '기록이 아직 없어요.';
+      wrap.appendChild(msg);
+      $('catBreakdownList').innerHTML = '';
+      return;
+    }
+
+    $('catChart').style.display = 'block';
+    const ctx = $('catChart').getContext('2d');
+    catChartInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: rows.map(r => r.category),
+        datasets: [{
+          data: rows.map(r => r.amount),
+          backgroundColor: rows.map((_, i) => CAT_PALETTE[i % CAT_PALETTE.length]),
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '62%',
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    $('catBreakdownList').innerHTML = rows.map((r, i) => {
+      const pct = grandTotal > 0 ? Math.round((r.amount / grandTotal) * 100) : 0;
+      const color = CAT_PALETTE[i % CAT_PALETTE.length];
+      return `
+        <div class="cat-row">
+          <div class="cat-row-item">
+            <span class="dot" style="background:${color}"></span>
+            <span class="name">${escapeHtml(r.category)}</span>
+            <span class="amt">${r.amount.toLocaleString('ko-KR')}원</span>
+            <span class="pct">${pct}%</span>
+          </div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+        </div>
+      `;
+    }).join('');
+  }
+
   function renderAll(){
     renderSummary();
     renderCalendar();
     renderList();
     renderChart();
+    renderCategoryBreakdown();
   }
 
+  // Page navigation (bottom nav)
+  function showPage(name){
+    document.querySelectorAll('.page').forEach(p => p.classList.toggle('active-page', p.id === 'page-' + name));
+    document.querySelectorAll('#bottomNav .nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === name));
+    if(name === 'graph'){
+      // charts may have rendered while their tab was hidden (0-size canvas) — resize now that it's visible
+      requestAnimationFrame(()=>{
+        if(chartInstance) chartInstance.resize();
+        if(catChartInstance) catChartInstance.resize();
+      });
+    }
+  }
+  document.querySelectorAll('#bottomNav .nav-btn').forEach(b=>{
+    b.addEventListener('click', ()=> showPage(b.dataset.page));
+  });
+
+  // Sub-tabs within the 그래프 page (기록 보기 / 그래프 보기 / 카테고리별 보기)
+  function showGraphSubTab(sub){
+    document.querySelectorAll('.sub-page').forEach(p => p.classList.toggle('active-sub', p.id === 'subpage-' + sub));
+    document.querySelectorAll('#graphSubTabToggle button').forEach(b => b.classList.toggle('active', b.dataset.sub === sub));
+    requestAnimationFrame(()=>{
+      if(sub === 'chart' && chartInstance) chartInstance.resize();
+      if(sub === 'category' && catChartInstance) catChartInstance.resize();
+    });
+  }
+  document.querySelectorAll('#graphSubTabToggle button').forEach(b=>{
+    b.addEventListener('click', ()=> showGraphSubTab(b.dataset.sub));
+  });
+
   // Events
-  document.querySelectorAll('.type-toggle button').forEach(b=>{
+  document.querySelectorAll('#entryTypeToggle button').forEach(b=>{
     b.addEventListener('click', ()=> setType(b.dataset.type));
   });
-  document.querySelectorAll('.period-toggle button').forEach(b=>{
+  document.querySelectorAll('#graphPeriodToggle button').forEach(b=>{
     b.addEventListener('click', ()=> setPeriod(b.dataset.period));
+  });
+  document.querySelectorAll('#catViewTypeToggle button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      state.catViewType = b.dataset.type;
+      document.querySelectorAll('#catViewTypeToggle button').forEach(x=>{
+        x.classList.toggle('active', x === b);
+      });
+      renderCategoryBreakdown();
+    });
+  });
+  document.querySelectorAll('#catViewPeriodToggle button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      state.catViewPeriod = b.dataset.catperiod;
+      document.querySelectorAll('#catViewPeriodToggle button').forEach(x=>{
+        x.classList.toggle('active', x === b);
+      });
+      renderCategoryBreakdown();
+    });
   });
 
   $('catAddToggle').addEventListener('click', ()=>{

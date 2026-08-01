@@ -185,8 +185,12 @@
   .record-item.income .badge{ background: var(--income-bg); color: var(--income); }
   .record-item.expense .badge{ background: var(--expense-bg); color: var(--expense); }
   .record-item .info{ flex:1; min-width:0; }
-  .record-item .info .cat{ font-size:14px; font-weight:700; }
-  .record-item .info .meta{ font-size:11.5px; color: var(--text-soft); margin-top:2px; }
+  .record-item .info .cat{
+    font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .record-item .info .meta{
+    font-size:11.5px; color: var(--text-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
   .record-item .amt{ font-size:14.5px; font-weight:800; white-space:nowrap; }
   .record-item.income .amt{ color: var(--income); }
   .record-item.expense .amt{ color: var(--expense); }
@@ -194,6 +198,21 @@
     border:none; background:none; color:#b9cbd4; font-size:16px; cursor:pointer; padding:2px 4px; flex-shrink:0;
   }
   .record-item .del:hover{ color: var(--expense); }
+  .record-item .edit{
+    border:none; background:none; color:#b9cbd4; font-size:15px; cursor:pointer; padding:2px 4px; flex-shrink:0;
+  }
+  .record-item .edit:hover{ color: var(--accent-deep); }
+
+  .edit-banner{
+    display:none; align-items:center; justify-content:space-between; gap:8px;
+    background: var(--accent-pale); color: var(--accent-deep); font-size:12.5px; font-weight:700;
+    padding:9px 12px; border-radius:10px; margin-bottom:14px;
+  }
+  .edit-banner.show{ display:flex; }
+  .edit-banner button{
+    border:none; background:#fff; color: var(--accent-deep); border-radius:8px; padding:5px 10px;
+    font-size:11.5px; font-weight:700; cursor:pointer;
+  }
   .empty-msg{ text-align:center; color: var(--text-soft); font-size:13px; padding: 26px 0; }
   .date-group{ margin-top:14px; }
   .date-group:first-child{ margin-top:0; }
@@ -248,6 +267,15 @@
 
   ::-webkit-scrollbar{ width:6px; }
   ::-webkit-scrollbar-thumb{ background: var(--accent-pale); border-radius:10px; }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(16px);
+    background: var(--text); color:#fff; font-size:13px; font-weight:600; padding:11px 20px;
+    border-radius:999px; opacity:0; pointer-events:none; transition: opacity .25s ease, transform .25s ease;
+    z-index:9999; box-shadow: 0 10px 28px -8px rgba(0,0,0,0.35); max-width:88vw; text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.error{ background: var(--expense); }
 </style>
 </head>
 <body>
@@ -276,6 +304,10 @@
   <!-- Entry form -->
   <div class="card">
     <h2><span class="dot"></span>기록 추가하기</h2>
+    <div class="edit-banner" id="editBanner">
+      <span>기록을 수정하는 중이에요</span>
+      <button type="button" id="cancelEditBtn">취소</button>
+    </div>
     <div class="type-toggle">
       <button data-type="income" class="active">수입</button>
       <button data-type="expense">지출</button>
@@ -357,6 +389,8 @@
 
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
 (function(){
   const STORAGE_KEY = 'yeongseon_ledger_entries';
@@ -374,7 +408,8 @@
     currentPeriod: 'day',
     selectedIds: new Set(),
     selectedDate: null,
-    calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    editingId: null
   };
 
   const $ = (id) => document.getElementById(id);
@@ -383,6 +418,15 @@
     const d = new Date();
     return d.toISOString().slice(0,10);
   };
+
+  let toastTimer = null;
+  function showToast(msg, type){
+    const el = $('toast');
+    el.textContent = msg;
+    el.className = 'toast show' + (type === 'error' ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> el.classList.remove('show'), 2200);
+  }
 
   async function loadData(){
     try{
@@ -396,12 +440,24 @@
   }
 
   async function saveEntries(){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries)); }
-    catch(e){ console.error('save entries failed', e); }
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
+      return true;
+    }catch(e){
+      console.error('save entries failed', e);
+      showToast('저장 실패: 이 브라우저에서 저장 공간을 사용할 수 없어요', 'error');
+      return false;
+    }
   }
   async function saveCategories(){
-    try{ localStorage.setItem(CAT_KEY, JSON.stringify(state.categories)); }
-    catch(e){ console.error('save categories failed', e); }
+    try{
+      localStorage.setItem(CAT_KEY, JSON.stringify(state.categories));
+      return true;
+    }catch(e){
+      console.error('save categories failed', e);
+      showToast('저장 실패: 이 브라우저에서 저장 공간을 사용할 수 없어요', 'error');
+      return false;
+    }
   }
 
   const otherLabelOf = (type) => type === 'income' ? '기타수입' : '기타지출';
@@ -505,6 +561,7 @@
               <div class="meta">${new Date(e.createdAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</div>
             </div>
             <div class="amt">${e.type === 'income' ? '+' : '-'}${e.amount.toLocaleString('ko-KR')}원</div>
+            <button class="edit" data-id="${e.id}" title="수정">✏️</button>
             <button class="del" data-id="${e.id}" title="삭제">✕</button>
           </div>
         `).join('')}
@@ -695,6 +752,38 @@
     e.target.value = v ? Number(v).toLocaleString('ko-KR') : '';
   });
 
+  function startEdit(entry){
+    setType(entry.type);
+    // make sure the entry's category shows up in the dropdown even if it's unusual
+    if(!state.categories[entry.type].includes(entry.category)){
+      const other = otherLabelOf(entry.type);
+      const idx = state.categories[entry.type].indexOf(other);
+      if(idx !== -1) state.categories[entry.type].splice(idx, 0, entry.category);
+      else state.categories[entry.type].push(entry.category);
+      renderCategorySelect();
+    }
+    $('catSelect').value = entry.category;
+    $('amountInput').value = entry.amount.toLocaleString('ko-KR');
+    $('dateInput').value = entry.date;
+    $('memoInput').value = entry.memo || '';
+
+    state.editingId = entry.id;
+    $('editBanner').classList.add('show');
+    $('saveBtn').textContent = '수정 완료';
+
+    document.querySelector('.card').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  function cancelEdit(){
+    state.editingId = null;
+    $('editBanner').classList.remove('show');
+    $('saveBtn').textContent = '저장하기';
+    $('amountInput').value = '';
+    $('memoInput').value = '';
+  }
+
+  $('cancelEditBtn').addEventListener('click', cancelEdit);
+
   $('saveBtn').addEventListener('click', async ()=>{
     const category = $('catSelect').value;
     const amountRaw = $('amountInput').value.replace(/[^0-9]/g,'');
@@ -705,6 +794,22 @@
     if(!category){ alert('카테고리를 선택해주세요.'); return; }
     if(!amount || amount <= 0){ alert('금액을 입력해주세요.'); return; }
 
+    if(state.editingId){
+      const target = state.entries.find(en => en.id === state.editingId);
+      if(target){
+        target.type = state.currentType;
+        target.category = category;
+        target.amount = amount;
+        target.date = date;
+        target.memo = memo;
+      }
+      const ok = await saveEntries();
+      cancelEdit();
+      renderAll();
+      if(ok) showToast('이 기기에 수정 내용을 저장했어요 ✅');
+      return;
+    }
+
     const entry = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
       type: state.currentType,
@@ -712,22 +817,31 @@
       createdAt: new Date().toISOString()
     };
     state.entries.push(entry);
-    await saveEntries();
+    const ok = await saveEntries();
     renderAll();
+    if(ok) showToast('이 기기에 저장했어요 ✅');
 
     $('amountInput').value = '';
     $('memoInput').value = '';
   });
 
   $('recordList').addEventListener('click', async (e)=>{
+    const editBtn = e.target.closest('.edit');
+    if(editBtn){
+      const entry = state.entries.find(en => en.id === editBtn.dataset.id);
+      if(entry) startEdit(entry);
+      return;
+    }
     const btn = e.target.closest('.del');
     if(!btn) return;
     if(!confirm('삭제하시겠습니까?')) return;
     const id = btn.dataset.id;
     state.entries = state.entries.filter(en => en.id !== id);
     state.selectedIds.delete(id);
-    await saveEntries();
+    if(state.editingId === id) cancelEdit();
+    const ok = await saveEntries();
     renderAll();
+    if(ok) showToast('삭제했어요 🗑️');
   });
 
   $('recordList').addEventListener('change', (e)=>{
@@ -774,14 +888,31 @@
   $('bulkDelBtn').addEventListener('click', async ()=>{
     if(state.selectedIds.size === 0) return;
     if(!confirm('삭제하시겠습니까?')) return;
+    const count = state.selectedIds.size;
+    if(state.editingId && state.selectedIds.has(state.editingId)) cancelEdit();
     state.entries = state.entries.filter(en => !state.selectedIds.has(en.id));
     state.selectedIds.clear();
-    await saveEntries();
+    const ok = await saveEntries();
     renderAll();
+    if(ok) showToast(`${count}건 삭제했어요 🗑️`);
   });
+
+  function isStorageAvailable(){
+    try{
+      const testKey = '__storage_test__';
+      localStorage.setItem(testKey, '1');
+      localStorage.removeItem(testKey);
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
 
   async function init(){
     $('dateInput').value = todayStr();
+    if(!isStorageAvailable()){
+      showToast('이 브라우저는 저장 기능을 막고 있어요 (시크릿 모드 등) — 기록이 저장되지 않을 수 있어요', 'error');
+    }
     await loadData();
     setType('income');
     setPeriod('day');

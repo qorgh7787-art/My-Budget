@@ -183,36 +183,38 @@
   .list-hint{ font-size:11.5px; color: var(--text-soft); margin-bottom:10px; line-height:1.4; }
   .record-list{ display:flex; flex-direction:column; gap:8px; max-height: 320px; overflow-y:auto; }
   .record-item{
-    display:flex; align-items:flex-start; gap:10px; padding:12px 10px; border-radius:12px; background: var(--card-soft);
+    display:flex; flex-direction:column; gap:6px; padding:12px 10px; border-radius:12px; background: var(--card-soft);
   }
+  .record-top{ display:flex; align-items:flex-start; gap:9px; }
   .record-item .chk{
-    width:18px; height:18px; flex-shrink:0; accent-color: var(--accent-deep); cursor:pointer; margin-top:10px;
+    width:18px; height:18px; flex-shrink:0; accent-color: var(--accent-deep); cursor:pointer; margin-top:9px;
   }
   .record-item .badge{
-    width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
-    font-size:16px; font-weight:900; flex-shrink:0;
+    width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:900; flex-shrink:0;
   }
   .record-item.income .badge{ background: var(--income-bg); color: var(--income); }
   .record-item.expense .badge{ background: var(--expense-bg); color: var(--expense); }
-  .record-item .info{ flex:1 1 auto; min-width:0; padding-top:2px; }
+  .record-item .info{ flex:1 1 auto; min-width:0; padding-top:3px; }
   .record-item .info .cat{
-    font-size:14px; font-weight:700; white-space:normal; overflow-wrap:anywhere; line-height:1.4;
-  }
-  .record-item .info .meta{
-    font-size:11.5px; color: var(--text-soft); margin-top:3px; white-space:normal; overflow-wrap:anywhere;
+    font-size:14px; font-weight:700; white-space:normal; overflow-wrap:break-word; word-break:keep-all; line-height:1.4;
   }
   .record-item .amt{
-    font-size:14.5px; font-weight:800; white-space:normal; overflow-wrap:anywhere; text-align:right;
-    flex-shrink:0; max-width:34%; padding-top:2px;
+    font-size:14px; font-weight:800; white-space:nowrap; flex-shrink:0; padding-top:3px;
   }
   .record-item.income .amt{ color: var(--income); }
   .record-item.expense .amt{ color: var(--expense); }
+  .record-bottom{
+    display:flex; align-items:center; justify-content:space-between; padding-left:45px;
+  }
+  .record-item .meta{ font-size:11px; color: var(--text-soft); }
+  .record-actions{ display:flex; align-items:center; gap:2px; }
   .record-item .del{
-    border:none; background:none; color:#b9cbd4; font-size:16px; cursor:pointer; padding:2px 4px; flex-shrink:0; margin-top:2px;
+    border:none; background:none; color:#b9cbd4; font-size:15px; cursor:pointer; padding:4px 6px; flex-shrink:0;
   }
   .record-item .del:hover{ color: var(--expense); }
   .record-item .edit{
-    border:none; background:none; color:#b9cbd4; font-size:15px; cursor:pointer; padding:2px 4px; flex-shrink:0; margin-top:2px;
+    border:none; background:none; color:#b9cbd4; font-size:14px; cursor:pointer; padding:4px 6px; flex-shrink:0;
   }
   .record-item .edit:hover{ color: var(--accent-deep); }
 
@@ -652,15 +654,21 @@
         <div class="date-group-header">${fmtDateHeader(g.date)}</div>
         ${g.items.map(e => `
           <div class="record-item ${e.type}" data-id="${e.id}">
-            <input type="checkbox" class="chk" data-id="${e.id}" ${state.selectedIds.has(e.id) ? 'checked' : ''}>
-            <div class="badge">${e.type === 'income' ? '수' : '지'}</div>
-            <div class="info">
-              <div class="cat">${escapeHtml(e.category)}${e.memo ? ' · ' + escapeHtml(e.memo) : ''}</div>
-              <div class="meta">${new Date(e.createdAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</div>
+            <div class="record-top">
+              <input type="checkbox" class="chk" data-id="${e.id}" ${state.selectedIds.has(e.id) ? 'checked' : ''}>
+              <div class="badge">${e.type === 'income' ? '수' : '지'}</div>
+              <div class="info">
+                <div class="cat">${escapeHtml(e.category)}${e.memo ? ' · ' + escapeHtml(e.memo) : ''}</div>
+              </div>
+              <div class="amt">${e.type === 'income' ? '+' : '-'}${e.amount.toLocaleString('ko-KR')}원</div>
             </div>
-            <div class="amt">${e.type === 'income' ? '+' : '-'}${e.amount.toLocaleString('ko-KR')}원</div>
-            <button class="edit" data-id="${e.id}" title="수정">✏️</button>
-            <button class="del" data-id="${e.id}" title="삭제">✕</button>
+            <div class="record-bottom">
+              <div class="meta">${new Date(e.createdAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</div>
+              <div class="record-actions">
+                <button class="edit" data-id="${e.id}" title="수정">✏️</button>
+                <button class="del" data-id="${e.id}" title="삭제">✕</button>
+              </div>
+            </div>
           </div>
         `).join('')}
       </div>

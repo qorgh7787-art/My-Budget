@@ -14,7 +14,17 @@
 <link rel="apple-touch-icon" href="icon-maskable-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script>
+  // safety net: if the primary CDN ever fails to load, fall back to another CDN
+  window.addEventListener('DOMContentLoaded', function(){
+    if(typeof Chart === 'undefined'){
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js';
+      document.head.appendChild(s);
+    }
+  });
+</script>
 <style>
   :root{
     --bg-top: #d8f0fb;
@@ -638,7 +648,20 @@
   }
 
   let chartInstance = null;
+  let chartRetryCount = 0;
   function renderChart(){
+    if(typeof Chart === 'undefined'){
+      // Chart.js hasn't finished loading yet (or a CDN hiccup) — retry briefly instead of failing silently
+      if(chartRetryCount < 30){
+        chartRetryCount++;
+        setTimeout(renderChart, 300);
+      } else {
+        $('mainChart').parentElement.innerHTML = '<div class="empty-msg">그래프를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침 해주세요.</div>';
+      }
+      return;
+    }
+    chartRetryCount = 0;
+
     const ctx = $('mainChart').getContext('2d');
     let labels = [], incomeData = [], expenseData = [];
 
@@ -916,6 +939,7 @@
     await loadData();
     setType('income');
     setPeriod('day');
+    state.selectedDate = todayStr(); // show today's records right away without needing to tap the calendar
     renderAll();
   }
   init();

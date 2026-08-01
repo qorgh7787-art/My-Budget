@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "영선의 가계부",
-  "short_name": "영선가계부",
+  "name": "나만의 가계부",
+  "short_name": "나만의가계부",
   "description": "수입과 지출을 기록하고 그래프로 확인하는 나만의 가계부",
   "start_url": "/index.html",
   "scope": "/",

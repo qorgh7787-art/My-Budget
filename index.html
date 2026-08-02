@@ -472,17 +472,17 @@
     <div class="card">
       <h2><span class="dot"></span>달력으로 보기</h2>
       <div class="cal-header">
-        <button type="button" class="cal-nav" id="calPrev">‹</button>
-        <div class="cal-month-label" id="calMonthLabel"></div>
-        <button type="button" class="cal-nav" id="calNext">›</button>
+        <button type="button" class="cal-nav" data-cal-action="prev">‹</button>
+        <div class="cal-month-label"></div>
+        <button type="button" class="cal-nav" data-cal-action="next">›</button>
       </div>
       <div class="cal-weekdays">
         <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
       </div>
-      <div class="cal-grid" id="calGrid"></div>
-      <div class="cal-filter-row" id="calFilterRow" style="display:none;">
-        <span id="calFilterLabel"></span>
-        <button type="button" id="calClearFilter">전체보기</button>
+      <div class="cal-grid"></div>
+      <div class="cal-filter-row" style="display:none;">
+        <span class="cal-filter-label"></span>
+        <button type="button" data-cal-action="clear">전체보기</button>
       </div>
     </div>
 
@@ -538,6 +538,23 @@
     </div>
 
     <div class="sub-page active-sub" id="subpage-records">
+      <div class="card">
+        <h2><span class="dot"></span>달력으로 보기</h2>
+        <div class="cal-header">
+          <button type="button" class="cal-nav" data-cal-action="prev">‹</button>
+          <div class="cal-month-label"></div>
+          <button type="button" class="cal-nav" data-cal-action="next">›</button>
+        </div>
+        <div class="cal-weekdays">
+          <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+        </div>
+        <div class="cal-grid"></div>
+        <div class="cal-filter-row" style="display:none;">
+          <span class="cal-filter-label"></span>
+          <button type="button" data-cal-action="clear">전체보기</button>
+        </div>
+      </div>
+
       <div class="card">
         <h2><span class="dot"></span>기록 보기</h2>
         <div class="list-toolbar">
@@ -798,7 +815,7 @@
   function renderCalendar(){
     const year = state.calendarMonth.getFullYear();
     const month = state.calendarMonth.getMonth();
-    $('calMonthLabel').textContent = `${year}년 ${month+1}월`;
+    const monthLabel = `${year}년 ${month+1}월`;
 
     const firstDay = new Date(year, month, 1);
     const startWeekday = firstDay.getDay();
@@ -830,15 +847,16 @@
       if(dateKey === state.selectedDate) classes.push('selected');
       cells += `<button type="button" class="${classes.join(' ')}" data-date="${dateKey}">${d}${dotsHtml}</button>`;
     }
-    $('calGrid').innerHTML = cells;
 
-    const filterRow = $('calFilterRow');
-    if(state.selectedDate){
-      filterRow.style.display = 'flex';
-      $('calFilterLabel').textContent = `${fmtDateHeader(state.selectedDate)} 기록만 보는 중`;
-    } else {
-      filterRow.style.display = 'none';
-    }
+    const filterLabelText = state.selectedDate ? `${fmtDateHeader(state.selectedDate)} 기록만 보는 중` : '';
+
+    // update every calendar instance on the page (record page + records subpage) in sync
+    document.querySelectorAll('.cal-month-label').forEach(el => { el.textContent = monthLabel; });
+    document.querySelectorAll('.cal-grid').forEach(el => { el.innerHTML = cells; });
+    document.querySelectorAll('.cal-filter-row').forEach(el => {
+      el.style.display = state.selectedDate ? 'flex' : 'none';
+    });
+    document.querySelectorAll('.cal-filter-label').forEach(el => { el.textContent = filterLabelText; });
   }
 
   function escapeHtml(str){
@@ -1284,26 +1302,34 @@
     renderList();
   });
 
-  $('calPrev').addEventListener('click', ()=>{
-    state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth()-1, 1);
-    renderCalendar();
-  });
-  $('calNext').addEventListener('click', ()=>{
-    state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth()+1, 1);
-    renderCalendar();
-  });
-  $('calGrid').addEventListener('click', (e)=>{
-    const btn = e.target.closest('.cal-day');
-    if(!btn || btn.classList.contains('empty')) return;
-    const date = btn.dataset.date;
-    state.selectedDate = (state.selectedDate === date) ? null : date;
-    renderCalendar();
-    renderList();
-  });
-  $('calClearFilter').addEventListener('click', ()=>{
-    state.selectedDate = null;
-    renderCalendar();
-    renderList();
+  // Delegated calendar events — works across both calendar instances (record page + records subpage)
+  document.addEventListener('click', (e)=>{
+    const prevBtn = e.target.closest('[data-cal-action="prev"]');
+    if(prevBtn){
+      state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth()-1, 1);
+      renderCalendar();
+      return;
+    }
+    const nextBtn = e.target.closest('[data-cal-action="next"]');
+    if(nextBtn){
+      state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth()+1, 1);
+      renderCalendar();
+      return;
+    }
+    const clearBtn = e.target.closest('[data-cal-action="clear"]');
+    if(clearBtn){
+      state.selectedDate = null;
+      renderCalendar();
+      renderList();
+      return;
+    }
+    const dayBtn = e.target.closest('.cal-day');
+    if(dayBtn && !dayBtn.classList.contains('empty')){
+      const date = dayBtn.dataset.date;
+      state.selectedDate = (state.selectedDate === date) ? null : date;
+      renderCalendar();
+      renderList();
+    }
   });
 
   $('bulkDelBtn').addEventListener('click', async ()=>{

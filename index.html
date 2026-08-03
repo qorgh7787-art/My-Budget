@@ -1360,6 +1360,10 @@
     if(!isStorageAvailable()){
       showToast('이 브라우저는 저장 기능을 막고 있어요 (시크릿 모드 등) — 기록이 저장되지 않을 수 있어요', 'error');
     }
+    // ask the browser not to silently clear our storage under storage pressure / long inactivity
+    if(navigator.storage && navigator.storage.persist){
+      try{ await navigator.storage.persist(); }catch(e){ /* not critical if this fails */ }
+    }
     await loadData();
     setType('income');
     setPeriod('day');

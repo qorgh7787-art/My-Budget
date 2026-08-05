@@ -381,6 +381,49 @@
   .backup-btn.secondary{
     background: var(--card-soft); color: var(--accent-deep); border:1.5px solid var(--accent-pale);
   }
+
+  /* Amount row + calculator */
+  .amount-row{ display:flex; gap:8px; }
+  .amount-row input{ flex:1; }
+  .calc-open-btn{
+    width:44px; flex-shrink:0; border-radius:10px; border:1.5px solid var(--accent-pale);
+    background: var(--accent-pale); color: var(--accent-deep); font-size:18px; cursor:pointer;
+  }
+  .calc-open-btn:hover{ background: var(--accent); color:#fff; }
+
+  .calc-overlay{
+    position:fixed; inset:0; background: rgba(15,35,45,0.45); z-index:2000;
+    display:none; align-items:flex-end; justify-content:center;
+  }
+  .calc-overlay.show{ display:flex; }
+  .calc-modal{
+    background:#fff; width:100%; max-width:420px; border-radius:20px 20px 0 0;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+    box-shadow: 0 -10px 30px -10px rgba(0,0,0,0.3);
+  }
+  .calc-header{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;
+    font-size:14px; font-weight:800; color: var(--text);
+  }
+  .calc-header button{ border:none; background:none; font-size:18px; color: var(--text-soft); cursor:pointer; padding:4px; }
+  .calc-display{
+    text-align:right; font-size:30px; font-weight:800; color: var(--text); background: var(--card-soft);
+    border-radius:12px; padding:16px 14px; margin-bottom:12px; overflow-x:auto; white-space:nowrap;
+  }
+  .calc-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:14px; }
+  .calc-grid button{
+    padding:16px 0; border:none; border-radius:12px; font-size:17px; font-weight:700;
+    background: var(--card-soft); color: var(--text); cursor:pointer; font-family:inherit;
+  }
+  .calc-grid button:active{ transform: scale(0.95); }
+  .calc-op-btn{ background: var(--accent-pale); color: var(--accent-deep); }
+  .calc-equals{ background: var(--accent-deep); color:#fff; }
+  .calc-zero-span{ grid-column: span 2; }
+  .calc-apply-btn{
+    width:100%; padding:14px; border:none; border-radius:12px; background: var(--income);
+    color:#fff; font-size:15px; font-weight:800; cursor:pointer;
+  }
+  .calc-apply-btn:active{ transform: scale(0.98); }
 </style>
 </head>
 <body>
@@ -512,7 +555,10 @@
 
       <div class="field">
         <label>금액</label>
-        <input type="text" id="amountInput" inputmode="numeric" placeholder="0">
+        <div class="amount-row">
+          <input type="text" id="amountInput" inputmode="numeric" placeholder="0">
+          <button type="button" class="calc-open-btn" id="calcOpenBtn" title="계산기">🧮</button>
+        </div>
       </div>
 
       <div class="field">
@@ -609,6 +655,42 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="calc-overlay" id="calcOverlay">
+  <div class="calc-modal">
+    <div class="calc-header">
+      <span>계산기</span>
+      <button type="button" id="calcCloseBtn">✕</button>
+    </div>
+    <div class="calc-display" id="calcDisplay">0</div>
+    <div class="calc-grid">
+      <button type="button" data-calc="clear">C</button>
+      <button type="button" data-calc="back">⌫</button>
+      <button type="button" data-calc="percent">%</button>
+      <button type="button" class="calc-op-btn" data-calc="op" data-op="÷">÷</button>
+
+      <button type="button" data-calc="digit" data-val="7">7</button>
+      <button type="button" data-calc="digit" data-val="8">8</button>
+      <button type="button" data-calc="digit" data-val="9">9</button>
+      <button type="button" class="calc-op-btn" data-calc="op" data-op="×">×</button>
+
+      <button type="button" data-calc="digit" data-val="4">4</button>
+      <button type="button" data-calc="digit" data-val="5">5</button>
+      <button type="button" data-calc="digit" data-val="6">6</button>
+      <button type="button" class="calc-op-btn" data-calc="op" data-op="−">−</button>
+
+      <button type="button" data-calc="digit" data-val="1">1</button>
+      <button type="button" data-calc="digit" data-val="2">2</button>
+      <button type="button" data-calc="digit" data-val="3">3</button>
+      <button type="button" class="calc-op-btn" data-calc="op" data-op="+">+</button>
+
+      <button type="button" class="calc-zero-span" data-calc="digit" data-val="0">0</button>
+      <button type="button" data-calc="dot">.</button>
+      <button type="button" class="calc-equals" data-calc="equals">=</button>
+    </div>
+    <button type="button" class="calc-apply-btn" id="calcApplyBtn">이 값 사용하기</button>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -1088,6 +1170,131 @@
       e.target.value = '';
     };
     reader.readAsText(file);
+  });
+
+  // Calculator (계산기)
+  const calcState = { display: '0', prevValue: null, operator: null, resetOnNextDigit: false };
+
+  function calcRender(){
+    $('calcDisplay').textContent = calcState.display;
+  }
+
+  function calcInputDigit(d){
+    if(calcState.resetOnNextDigit || calcState.display === '0'){
+      calcState.display = d;
+      calcState.resetOnNextDigit = false;
+    } else if(calcState.display.replace('-','').replace('.','').length < 12){
+      calcState.display += d;
+    }
+    calcRender();
+  }
+
+  function calcInputDot(){
+    if(calcState.resetOnNextDigit){
+      calcState.display = '0.';
+      calcState.resetOnNextDigit = false;
+    } else if(!calcState.display.includes('.')){
+      calcState.display += '.';
+    }
+    calcRender();
+  }
+
+  function calcCompute(prev, curr, op){
+    switch(op){
+      case '+': return prev + curr;
+      case '−': return prev - curr;
+      case '×': return prev * curr;
+      case '÷': return curr === 0 ? 0 : prev / curr;
+      default: return curr;
+    }
+  }
+
+  function calcFormatResult(n){
+    if(!isFinite(n)) return '0';
+    // trim floating point noise, keep up to 6 decimal places
+    const rounded = Math.round(n * 1e6) / 1e6;
+    return String(rounded);
+  }
+
+  function calcSetOperator(op){
+    const curr = parseFloat(calcState.display);
+    if(calcState.operator && !calcState.resetOnNextDigit){
+      const result = calcCompute(calcState.prevValue, curr, calcState.operator);
+      calcState.prevValue = result;
+      calcState.display = calcFormatResult(result);
+    } else {
+      calcState.prevValue = curr;
+    }
+    calcState.operator = op;
+    calcState.resetOnNextDigit = true;
+    calcRender();
+  }
+
+  function calcEquals(){
+    if(calcState.operator === null || calcState.prevValue === null) return;
+    const curr = parseFloat(calcState.display);
+    const result = calcCompute(calcState.prevValue, curr, calcState.operator);
+    calcState.display = calcFormatResult(result);
+    calcState.prevValue = null;
+    calcState.operator = null;
+    calcState.resetOnNextDigit = true;
+    calcRender();
+  }
+
+  function calcClear(){
+    calcState.display = '0';
+    calcState.prevValue = null;
+    calcState.operator = null;
+    calcState.resetOnNextDigit = false;
+    calcRender();
+  }
+
+  function calcBackspace(){
+    if(calcState.resetOnNextDigit) return;
+    calcState.display = calcState.display.length > 1 ? calcState.display.slice(0, -1) : '0';
+    calcRender();
+  }
+
+  function calcPercent(){
+    const curr = parseFloat(calcState.display);
+    calcState.display = calcFormatResult(curr / 100);
+    calcRender();
+  }
+
+  function openCalculator(){
+    calcClear();
+    // seed with whatever's already in the amount field, if any
+    const existing = $('amountInput').value.replace(/[^0-9]/g, '');
+    if(existing){ calcState.display = existing; calcRender(); }
+    $('calcOverlay').classList.add('show');
+  }
+  function closeCalculator(){
+    $('calcOverlay').classList.remove('show');
+  }
+
+  $('calcOpenBtn').addEventListener('click', openCalculator);
+  $('calcCloseBtn').addEventListener('click', closeCalculator);
+  $('calcOverlay').addEventListener('click', (e)=>{
+    if(e.target === $('calcOverlay')) closeCalculator();
+  });
+
+  $('calcApplyBtn').addEventListener('click', ()=>{
+    const value = Math.round(Math.abs(parseFloat(calcState.display) || 0));
+    $('amountInput').value = value.toLocaleString('ko-KR');
+    closeCalculator();
+  });
+
+  document.querySelectorAll('.calc-grid button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const action = btn.dataset.calc;
+      if(action === 'digit') calcInputDigit(btn.dataset.val);
+      else if(action === 'dot') calcInputDot();
+      else if(action === 'op') calcSetOperator(btn.dataset.op);
+      else if(action === 'equals') calcEquals();
+      else if(action === 'clear') calcClear();
+      else if(action === 'back') calcBackspace();
+      else if(action === 'percent') calcPercent();
+    });
   });
 
   // Footer accordion (개인정보처리방침 / 이용약관 / 보안 안내)

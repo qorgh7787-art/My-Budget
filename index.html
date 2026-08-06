@@ -372,6 +372,23 @@
 
   /* Backup / restore */
   .backup-desc{ font-size:12.5px; color: var(--text-soft); margin:0 0 14px; line-height:1.5; }
+
+  /* Category management */
+  .cat-manage-list{ display:flex; flex-direction:column; gap:8px; }
+  .cat-manage-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:11px 12px; border-radius:10px; background: var(--card-soft);
+  }
+  .cat-manage-item .name{ font-size:14px; font-weight:600; color: var(--text); }
+  .cat-manage-item .pinned-tag{
+    font-size:11px; color: var(--text-soft); font-weight:600; background: var(--accent-pale);
+    padding:3px 8px; border-radius:8px;
+  }
+  .cat-manage-item .del-cat-btn{
+    border:none; background:none; color:#b9cbd4; font-size:16px; cursor:pointer; padding:2px 6px; flex-shrink:0;
+  }
+  .cat-manage-item .del-cat-btn:hover{ color: var(--expense); }
+  .cat-manage-empty{ text-align:center; color: var(--text-soft); font-size:12.5px; padding:16px 0; }
   .backup-actions{ display:flex; flex-direction:column; gap:8px; }
   .backup-btn{
     width:100%; padding:12px; border:none; border-radius:12px; font-size:14px; font-weight:700;
@@ -574,6 +591,16 @@
 
       <button class="save-btn income-mode" id="saveBtn">저장하기</button>
     </div>
+
+    <!-- Category management -->
+    <div class="card">
+      <h2><span class="dot"></span>카테고리 관리</h2>
+      <div class="type-toggle" id="catManageTypeToggle">
+        <button data-type="income" class="active">수입</button>
+        <button data-type="expense">지출</button>
+      </div>
+      <div class="cat-manage-list" id="catManageList"></div>
+    </div>
   </div>
 
   <!-- GRAPH PAGE (sub-tabs: 기록 보기 / 그래프 보기 / 카테고리별 보기) -->
@@ -713,7 +740,8 @@
     calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     editingId: null,
     catViewType: 'income',
-    catViewPeriod: 'month'
+    catViewPeriod: 'month',
+    catManageType: 'income'
   };
 
   const $ = (id) => document.getElementById(id);
@@ -1113,12 +1141,38 @@
     }).join('');
   }
 
+  function renderCategoryManageList(){
+    const listEl = $('catManageList');
+    if(!listEl) return;
+    const type = state.catManageType;
+    const other = otherLabelOf(type);
+    const list = state.categories[type] || [];
+
+    if(list.length === 0){
+      listEl.innerHTML = '<div class="cat-manage-empty">카테고리가 없어요.</div>';
+      return;
+    }
+
+    listEl.innerHTML = list.map(name => {
+      const isPinned = name === other;
+      return `
+        <div class="cat-manage-item">
+          <span class="name">${escapeHtml(name)}</span>
+          ${isPinned
+            ? '<span class="pinned-tag">기본</span>'
+            : `<button type="button" class="del-cat-btn" data-cat-name="${escapeHtml(name)}" title="삭제">✕</button>`}
+        </div>
+      `;
+    }).join('');
+  }
+
   function renderAll(){
     renderSummary();
     renderCalendar();
     renderList();
     renderChart();
     renderCategoryBreakdown();
+    renderCategoryManageList();
   }
 
   // Backup: export to JSON file / import from JSON file
@@ -1359,6 +1413,35 @@
       });
       renderCategoryBreakdown();
     });
+  });
+  document.querySelectorAll('#catManageTypeToggle button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      state.catManageType = b.dataset.type;
+      document.querySelectorAll('#catManageTypeToggle button').forEach(x=>{
+        x.classList.toggle('active', x === b);
+      });
+      renderCategoryManageList();
+    });
+  });
+  $('catManageList').addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.del-cat-btn');
+    if(!btn) return;
+    const name = btn.dataset.catName;
+    const type = state.catManageType;
+    if(!confirm(`'${name}' 카테고리를 삭제하시겠습니까?\n(이미 저장된 기록의 카테고리 이름은 그대로 남아있어요.)`)) return;
+
+    state.categories[type] = state.categories[type].filter(c => c !== name);
+    const ok = await saveCategories();
+    if(ok){
+      if(state.currentType === type){
+        renderCategorySelect();
+        if($('catSelect').value === '' && state.categories[type].length > 0){
+          $('catSelect').value = state.categories[type][0];
+        }
+      }
+      renderCategoryManageList();
+      showToast('카테고리를 삭제했어요 🗑️');
+    }
   });
   document.querySelectorAll('#catViewPeriodToggle button').forEach(b=>{
     b.addEventListener('click', ()=>{

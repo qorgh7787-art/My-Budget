@@ -14,7 +14,6 @@
 <link rel="apple-touch-icon" href="icon-maskable-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
 <script>
   // safety net: if the primary CDN ever fails to load, fall back to another CDN
@@ -337,50 +336,6 @@
   .nav-btn.active{ color: var(--accent-deep); }
   .nav-btn.active .nav-icon{ transform: scale(1.08); }
 
-  /* Auth gate (login / signup) */
-  body.logged-out .wrap, body.logged-out .bottom-nav{ display:none !important; }
-  body:not(.logged-out) .auth-gate{ display:none !important; }
-
-  .auth-gate{
-    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 16px;
-  }
-  .auth-card{
-    width:100%; max-width:380px; background: var(--card); border-radius:22px; padding:32px 24px;
-    box-shadow: var(--shadow); text-align:center;
-  }
-  .auth-logo{
-    width:56px; height:56px; margin:0 auto 14px; border-radius:16px;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
-    color:#fff; font-size:26px; font-weight:900; display:flex; align-items:center; justify-content:center;
-  }
-  .auth-card h1{ font-family:'Gowun Dodum', sans-serif; font-size:22px; font-weight:400; margin:0 0 8px; color: var(--text); }
-  .auth-sub{ font-size:12.5px; color: var(--text-soft); line-height:1.6; margin:0 0 22px; }
-  .auth-tabs{ display:flex; background: var(--card-soft); border-radius:12px; padding:4px; margin-bottom:18px; }
-  .auth-tab{
-    flex:1; border:none; background:transparent; padding:10px 0; border-radius:9px;
-    font-size:13.5px; font-weight:700; color: var(--text-soft); cursor:pointer;
-  }
-  .auth-tab.active{ background: var(--accent-deep); color:#fff; }
-  .auth-field{ margin-bottom:12px; text-align:left; }
-  .auth-field label{ display:block; font-size:12px; color: var(--text-soft); margin-bottom:6px; font-weight:500; }
-  .auth-field input{
-    width:100%; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line);
-    font-size:14px; font-family:inherit; background:#fbfeff; color: var(--text);
-  }
-  .auth-field input:focus{ outline:none; border-color: var(--accent); background:#fff; }
-  .auth-error{
-    display:none; font-size:12px; color: var(--expense); background: var(--expense-bg);
-    padding:9px 12px; border-radius:10px; margin-bottom:12px; text-align:left; line-height:1.5;
-  }
-  .auth-error.show{ display:block; }
-  .auth-submit-btn{
-    width:100%; padding:13px; border:none; border-radius:12px; font-size:15px; font-weight:700;
-    color:#fff; background: var(--accent-deep); cursor:pointer;
-  }
-  .auth-submit-btn:active{ transform: scale(0.98); }
-  .auth-submit-btn:disabled{ opacity:0.6; cursor:default; }
-  .auth-hint{ font-size:11.5px; color: var(--text-soft); margin:12px 0 0; line-height:1.5; }
-
   /* Footer: legal/policy accordion */
   .app-footer{ margin-top:4px; }
   .footer-accordion{
@@ -425,10 +380,6 @@
   .backup-btn:active{ transform: scale(0.98); }
   .backup-btn.secondary{
     background: var(--card-soft); color: var(--accent-deep); border:1.5px solid var(--accent-pale);
-  }
-  .account-email{
-    font-size:14px; font-weight:700; color: var(--text); margin:0 0 14px;
-    padding:11px 12px; background: var(--card-soft); border-radius:10px; word-break:break-all;
   }
 
   /* Amount row + calculator */
@@ -475,34 +426,7 @@
   .calc-apply-btn:active{ transform: scale(0.98); }
 </style>
 </head>
-<body class="logged-out">
-
-<div class="auth-gate" id="authGate">
-  <div class="auth-card">
-    <div class="auth-logo">₩</div>
-    <h1>나만의 가계부</h1>
-    <p class="auth-sub">로그인하면 내 기록을 어떤 기기에서도 안전하게 볼 수 있어요.<br>다른 계정과 기록이 섞이지 않아요.</p>
-
-    <div class="auth-tabs">
-      <button type="button" class="auth-tab active" data-auth-tab="login">로그인</button>
-      <button type="button" class="auth-tab" data-auth-tab="signup">회원가입</button>
-    </div>
-
-    <div class="auth-field">
-      <label>이메일</label>
-      <input type="email" id="authEmail" placeholder="example@email.com" autocomplete="username">
-    </div>
-    <div class="auth-field">
-      <label>비밀번호</label>
-      <input type="password" id="authPassword" placeholder="6자 이상" autocomplete="current-password">
-    </div>
-
-    <div class="auth-error" id="authError"></div>
-
-    <button type="button" class="auth-submit-btn" id="authSubmitBtn">로그인</button>
-    <p class="auth-hint" id="authHint"></p>
-  </div>
-</div>
+<body>
 
 <div class="wrap">
 
@@ -531,17 +455,10 @@
 
   <!-- SETTINGS PAGE (backup / privacy / terms / security) -->
   <div class="page" id="page-settings">
-    <!-- Account -->
-    <div class="card">
-      <h2><span class="dot"></span>내 계정</h2>
-      <p class="account-email" id="accountEmail">-</p>
-      <button type="button" class="backup-btn secondary" id="logoutBtn">로그아웃</button>
-    </div>
-
     <!-- Backup / restore -->
     <div class="card">
       <h2><span class="dot"></span>데이터 백업</h2>
-      <p class="backup-desc">내 기록은 로그인한 계정에 안전하게 저장돼요. 그래도 만약을 대비해 파일로도 백업해두세요.</p>
+      <p class="backup-desc">기록은 이 기기에만 저장돼요. 기기를 바꾸거나 만약을 대비해 파일로 백업해두세요.</p>
       <div class="backup-actions">
         <button type="button" class="backup-btn" id="exportBtn">⬇️ 백업 파일 내보내기</button>
         <button type="button" class="backup-btn secondary" id="importBtn">⬆️ 백업 파일 불러오기</button>
@@ -778,39 +695,17 @@
 
 <script>
 (function(){
-  // ====== Supabase setup ======
-  // Replace these two values with your own project's URL and public anon key
-  // (Supabase dashboard → Settings → API). The anon key is safe to expose client-side;
-  // Row Level Security policies on the tables keep each user's data private.
-  const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-
-  let supabase = null;
-  try{
-    if(SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY'){
-      throw new Error('NOT_CONFIGURED');
-    }
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }catch(e){
-    const errEl = document.getElementById('authError');
-    if(errEl){
-      errEl.textContent = '⚠️ 앱이 아직 설정되지 않았어요. index.html 상단의 SUPABASE_URL / SUPABASE_ANON_KEY 값을 본인의 Supabase 프로젝트 값으로 바꿔주세요.';
-      errEl.classList.add('show');
-    }
-    const submitBtn = document.getElementById('authSubmitBtn');
-    if(submitBtn) submitBtn.disabled = true;
-    return; // stop here — nothing else can work without a valid Supabase connection
-  }
+  const STORAGE_KEY = 'yeongseon_ledger_entries';
+  const CAT_KEY = 'yeongseon_ledger_categories';
 
   const defaultCats = {
-    income: ['용돈','월급','부수입'],
-    expense: ['식비','교통','쇼핑','생활비','문화/여가']
+    income: ['용돈','월급','부수입','기타수입'],
+    expense: ['식비','교통','쇼핑','생활비','문화/여가','기타지출']
   };
-  const PINNED_ORDER = 9999;
 
   let state = {
     entries: [],
-    categories: { income: [], expense: [] },
+    categories: JSON.parse(JSON.stringify(defaultCats)),
     currentType: 'income',
     currentPeriod: 'day',
     selectedIds: new Set(),
@@ -818,8 +713,7 @@
     calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     editingId: null,
     catViewType: 'income',
-    catViewPeriod: 'month',
-    currentUser: null
+    catViewPeriod: 'month'
   };
 
   const $ = (id) => document.getElementById(id);
@@ -838,168 +732,35 @@
     toastTimer = setTimeout(()=> el.classList.remove('show'), 2200);
   }
 
-  function rowToEntry(row){
-    return {
-      id: row.id,
-      type: row.type,
-      category: row.category,
-      amount: Number(row.amount),
-      date: row.date,
-      memo: row.memo || '',
-      createdAt: row.created_at
-    };
-  }
-
-  // ====== Data layer (Supabase-backed, scoped to the logged-in user via RLS) ======
+  // ====== Data layer (this device's browser storage only) ======
   async function loadData(){
     try{
-      const { data, error } = await supabase
-        .from('entries')
-        .select('*')
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false });
-      if(error) throw error;
-      state.entries = (data || []).map(rowToEntry);
-    }catch(e){
-      console.error('load entries failed', e);
-      showToast('기록을 불러오지 못했어요', 'error');
-      state.entries = [];
-    }
-
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) state.entries = JSON.parse(raw);
+    }catch(e){ state.entries = []; }
     try{
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('sort_order', { ascending: true });
-      if(error) throw error;
-
-      if(!data || data.length === 0){
-        await seedDefaultCategories();
-        return loadCategoriesOnly();
-      }
-      const grouped = { income: [], expense: [] };
-      data.forEach(row => { grouped[row.type].push(row.name); });
-      state.categories = grouped;
-    }catch(e){
-      console.error('load categories failed', e);
-      state.categories = JSON.parse(JSON.stringify(defaultCats));
-    }
+      const raw2 = localStorage.getItem(CAT_KEY);
+      if(raw2) state.categories = JSON.parse(raw2);
+    }catch(e){ /* keep defaults */ }
   }
 
-  async function loadCategoriesOnly(){
+  async function saveEntries(){
     try{
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('sort_order', { ascending: true });
-      if(error) throw error;
-      const grouped = { income: [], expense: [] };
-      (data || []).forEach(row => { grouped[row.type].push(row.name); });
-      state.categories = grouped;
-    }catch(e){
-      console.error('reload categories failed', e);
-    }
-  }
-
-  async function seedDefaultCategories(){
-    const rows = [];
-    defaultCats.income.forEach((name, i) => rows.push({ type:'income', name, sort_order: i }));
-    rows.push({ type:'income', name:'기타수입', sort_order: PINNED_ORDER });
-    defaultCats.expense.forEach((name, i) => rows.push({ type:'expense', name, sort_order: i }));
-    rows.push({ type:'expense', name:'기타지출', sort_order: PINNED_ORDER });
-    try{
-      const { error } = await supabase.from('categories').insert(rows);
-      if(error) throw error;
-    }catch(e){
-      console.error('seed categories failed', e);
-    }
-  }
-
-  async function dbAddEntry(fields){
-    try{
-      const { data, error } = await supabase.from('entries').insert([fields]).select().single();
-      if(error) throw error;
-      return rowToEntry(data);
-    }catch(e){
-      console.error('add entry failed', e);
-      showToast('저장 실패: ' + (e.message || '알 수 없는 오류'), 'error');
-      return null;
-    }
-  }
-
-  async function dbUpdateEntry(id, fields){
-    try{
-      const { error } = await supabase.from('entries').update(fields).eq('id', id);
-      if(error) throw error;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
       return true;
     }catch(e){
-      console.error('update entry failed', e);
-      showToast('수정 실패: ' + (e.message || '알 수 없는 오류'), 'error');
+      console.error('save entries failed', e);
+      showToast('저장 실패: 이 브라우저에서 저장 공간을 사용할 수 없어요', 'error');
       return false;
     }
   }
-
-  async function dbDeleteEntries(ids){
+  async function saveCategories(){
     try{
-      const { error } = await supabase.from('entries').delete().in('id', ids);
-      if(error) throw error;
+      localStorage.setItem(CAT_KEY, JSON.stringify(state.categories));
       return true;
     }catch(e){
-      console.error('delete entries failed', e);
-      showToast('삭제 실패: ' + (e.message || '알 수 없는 오류'), 'error');
-      return false;
-    }
-  }
-
-  async function dbAddCategory(type, name){
-    try{
-      const existingOrders = (state.categories[type] || [])
-        .map((_, i) => i); // fallback ordering if we can't compute from DB
-      const nextOrder = existingOrders.length; // inserted before the pinned "기타" item via seed order scheme
-      const { error } = await supabase.from('categories').insert([{ type, name, sort_order: nextOrder }]);
-      if(error) throw error;
-      return true;
-    }catch(e){
-      console.error('add category failed', e);
-      showToast('카테고리 저장 실패: ' + (e.message || '알 수 없는 오류'), 'error');
-      return false;
-    }
-  }
-
-  async function dbReplaceAllData(entries, categories){
-    try{
-      const { data: existingEntries } = await supabase.from('entries').select('id');
-      if(existingEntries && existingEntries.length > 0){
-        await supabase.from('entries').delete().in('id', existingEntries.map(r => r.id));
-      }
-      const { data: existingCats } = await supabase.from('categories').select('id');
-      if(existingCats && existingCats.length > 0){
-        await supabase.from('categories').delete().in('id', existingCats.map(r => r.id));
-      }
-
-      if(entries && entries.length > 0){
-        const rows = entries.map(e => ({
-          type: e.type, category: e.category, amount: e.amount, date: e.date, memo: e.memo || ''
-        }));
-        const { error } = await supabase.from('entries').insert(rows);
-        if(error) throw error;
-      }
-
-      const catRows = [];
-      if(categories){
-        (categories.income || []).forEach((name, i) => catRows.push({ type:'income', name, sort_order: name === '기타수입' ? PINNED_ORDER : i }));
-        (categories.expense || []).forEach((name, i) => catRows.push({ type:'expense', name, sort_order: name === '기타지출' ? PINNED_ORDER : i }));
-      }
-      if(catRows.length > 0){
-        const { error } = await supabase.from('categories').insert(catRows);
-        if(error) throw error;
-      } else {
-        await seedDefaultCategories();
-      }
-      return true;
-    }catch(e){
-      console.error('replace all data failed', e);
-      showToast('복원 실패: ' + (e.message || '알 수 없는 오류'), 'error');
+      console.error('save categories failed', e);
+      showToast('저장 실패: 이 브라우저에서 저장 공간을 사용할 수 없어요', 'error');
       return false;
     }
   }
@@ -1398,12 +1159,13 @@
         cancelEdit();
         state.selectedIds.clear();
 
-        const ok = await dbReplaceAllData(data.entries, data.categories);
-        if(ok){
-          await loadData();
-          renderAll();
-          showToast('백업 파일을 불러왔어요 ⬆️');
-        }
+        state.entries = data.entries;
+        if(data.categories) state.categories = data.categories;
+
+        const ok1 = await saveEntries();
+        const ok2 = await saveCategories();
+        renderAll();
+        if(ok1 && ok2) showToast('백업 파일을 불러왔어요 ⬆️');
       }catch(err){
         console.error(err);
         showToast('파일을 읽는 중 오류가 발생했어요', 'error');
@@ -1617,18 +1379,16 @@
     if(!val) return;
     const catList = state.categories[state.currentType];
     if(!catList.includes(val)){
-      const ok = await dbAddCategory(state.currentType, val);
-      if(ok){
-        const other = otherLabelOf(state.currentType);
-        const otherIdx = catList.indexOf(other);
-        if(otherIdx !== -1){
-          catList.splice(otherIdx, 0, val); // insert just above the pinned "기타" category
-        } else {
-          catList.push(val);
-        }
-        renderCategorySelect();
-        $('catSelect').value = val;
+      const other = otherLabelOf(state.currentType);
+      const otherIdx = catList.indexOf(other);
+      if(otherIdx !== -1){
+        catList.splice(otherIdx, 0, val); // insert just above the pinned "기타" category
+      } else {
+        catList.push(val);
       }
+      await saveCategories();
+      renderCategorySelect();
+      $('catSelect').value = val;
     }
     $('newCatInput').value = '';
     $('newCatRow').classList.remove('show');
@@ -1685,30 +1445,33 @@
 
     if(state.editingId){
       const target = state.entries.find(en => en.id === state.editingId);
-      const ok = await dbUpdateEntry(state.editingId, {
-        type: state.currentType, category, amount, date, memo
-      });
-      if(ok && target){
+      if(target){
         target.type = state.currentType;
         target.category = category;
         target.amount = amount;
         target.date = date;
         target.memo = memo;
       }
+      const ok = await saveEntries();
       cancelEdit();
       renderAll();
-      if(ok) showToast('수정 내용을 저장했어요 ✅');
+      if(ok) showToast('이 기기에 수정 내용을 저장했어요 ✅');
       return;
     }
 
-    const savedRow = await dbAddEntry({ type: state.currentType, category, amount, date, memo });
-    if(savedRow){
-      state.entries.push(savedRow);
-      renderAll();
-      showToast('저장했어요 ✅');
-      $('amountInput').value = '';
-      $('memoInput').value = '';
-    }
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+      type: state.currentType,
+      category, amount, date, memo,
+      createdAt: new Date().toISOString()
+    };
+    state.entries.push(entry);
+    const ok = await saveEntries();
+    renderAll();
+    if(ok) showToast('이 기기에 저장했어요 ✅');
+
+    $('amountInput').value = '';
+    $('memoInput').value = '';
   });
 
   $('recordList').addEventListener('click', async (e)=>{
@@ -1722,14 +1485,12 @@
     if(!btn) return;
     if(!confirm('삭제하시겠습니까?')) return;
     const id = btn.dataset.id;
-    const ok = await dbDeleteEntries([id]);
-    if(ok){
-      state.entries = state.entries.filter(en => en.id !== id);
-      state.selectedIds.delete(id);
-      if(state.editingId === id) cancelEdit();
-      renderAll();
-      showToast('삭제했어요 🗑️');
-    }
+    state.entries = state.entries.filter(en => en.id !== id);
+    state.selectedIds.delete(id);
+    if(state.editingId === id) cancelEdit();
+    const ok = await saveEntries();
+    renderAll();
+    if(ok) showToast('삭제했어요 🗑️');
   });
 
   $('recordList').addEventListener('change', (e)=>{
@@ -1784,122 +1545,42 @@
   $('bulkDelBtn').addEventListener('click', async ()=>{
     if(state.selectedIds.size === 0) return;
     if(!confirm('삭제하시겠습니까?')) return;
-    const idsToDelete = Array.from(state.selectedIds);
-    const count = idsToDelete.length;
-    const ok = await dbDeleteEntries(idsToDelete);
-    if(ok){
-      if(state.editingId && state.selectedIds.has(state.editingId)) cancelEdit();
-      state.entries = state.entries.filter(en => !state.selectedIds.has(en.id));
-      state.selectedIds.clear();
-      renderAll();
-      showToast(`${count}건 삭제했어요 🗑️`);
-    }
+    const count = state.selectedIds.size;
+    if(state.editingId && state.selectedIds.has(state.editingId)) cancelEdit();
+    state.entries = state.entries.filter(en => !state.selectedIds.has(en.id));
+    state.selectedIds.clear();
+    const ok = await saveEntries();
+    renderAll();
+    if(ok) showToast(`${count}건 삭제했어요 🗑️`);
   });
 
-  // ====== Auth (login / signup / logout) ======
-  let authMode = 'login';
-
-  function mapAuthError(message){
-    if(!message) return '알 수 없는 오류가 발생했어요.';
-    if(message.includes('Invalid login credentials')) return '이메일 또는 비밀번호가 올바르지 않아요.';
-    if(message.includes('already registered') || message.includes('already been registered')) return '이미 가입된 이메일이에요. 로그인해주세요.';
-    if(message.includes('Password should be at least')) return '비밀번호는 6자 이상이어야 해요.';
-    if(message.includes('Unable to validate email')) return '올바른 이메일 형식이 아니에요.';
-    if(message.includes('Email not confirmed')) return '이메일 인증이 필요해요. 받으신 인증 메일을 확인해주세요.';
-    return message;
-  }
-
-  function showAuthError(msg){
-    const el = $('authError');
-    el.textContent = msg;
-    el.classList.add('show');
-  }
-  function clearAuthError(){
-    $('authError').classList.remove('show');
-    $('authError').textContent = '';
-  }
-
-  document.querySelectorAll('.auth-tab').forEach(tab=>{
-    tab.addEventListener('click', ()=>{
-      authMode = tab.dataset.authTab;
-      document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t === tab));
-      $('authSubmitBtn').textContent = authMode === 'login' ? '로그인' : '회원가입';
-      $('authPassword').autocomplete = authMode === 'login' ? 'current-password' : 'new-password';
-      clearAuthError();
-      $('authHint').textContent = '';
-    });
-  });
-
-  $('authSubmitBtn').addEventListener('click', async ()=>{
-    const email = $('authEmail').value.trim();
-    const password = $('authPassword').value;
-    clearAuthError();
-    $('authHint').textContent = '';
-
-    if(!email || !password){
-      showAuthError('이메일과 비밀번호를 모두 입력해주세요.');
-      return;
-    }
-
-    $('authSubmitBtn').disabled = true;
-    $('authSubmitBtn').textContent = authMode === 'login' ? '로그인 중...' : '가입 중...';
-
+  function isStorageAvailable(){
     try{
-      if(authMode === 'login'){
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if(error) throw error;
-      } else {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if(error) throw error;
-        if(!data.session){
-          $('authHint').textContent = '가입 확인 이메일을 보냈어요. 이메일 인증 후 로그인해주세요.';
-          authMode = 'login';
-          document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.authTab === 'login'));
-        }
-      }
+      const testKey = '__storage_test__';
+      localStorage.setItem(testKey, '1');
+      localStorage.removeItem(testKey);
+      return true;
     }catch(e){
-      showAuthError(mapAuthError(e.message));
-    }finally{
-      $('authSubmitBtn').disabled = false;
-      $('authSubmitBtn').textContent = authMode === 'login' ? '로그인' : '회원가입';
+      return false;
     }
-  });
+  }
 
-  $('logoutBtn').addEventListener('click', async ()=>{
-    if(!confirm('로그아웃 하시겠습니까?')) return;
-    await supabase.auth.signOut();
-  });
-
-  async function enterApp(user){
-    state.currentUser = user;
-    document.body.classList.remove('logged-out');
-    document.body.classList.add('authed');
-    $('accountEmail').textContent = user.email;
-    $('authEmail').value = '';
-    $('authPassword').value = '';
-    clearAuthError();
-
+  async function init(){
     $('dateInput').value = todayStr();
+    if(!isStorageAvailable()){
+      showToast('이 브라우저는 저장 기능을 막고 있어요 (시크릿 모드 등) — 기록이 저장되지 않을 수 있어요', 'error');
+    }
+    // ask the browser not to silently clear our storage under storage pressure / long inactivity
+    if(navigator.storage && navigator.storage.persist){
+      try{ await navigator.storage.persist(); }catch(e){ /* not critical if this fails */ }
+    }
     await loadData();
     setType('income');
     setPeriod('day');
-    state.selectedDate = todayStr();
+    state.selectedDate = todayStr(); // show today's records right away without needing to tap the calendar
     renderAll();
   }
-
-  function showAuthGate(){
-    state.currentUser = null;
-    document.body.classList.add('logged-out');
-    document.body.classList.remove('authed');
-  }
-
-  supabase.auth.onAuthStateChange((event, session) => {
-    if(session && session.user){
-      enterApp(session.user);
-    } else {
-      showAuthGate();
-    }
-  });
+  init();
 })();
 
 if ('serviceWorker' in navigator) {

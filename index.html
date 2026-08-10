@@ -26,6 +26,9 @@
     }
   });
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     color-scheme: light;
@@ -46,6 +49,7 @@
     --shadow: 0 10px 30px -12px rgba(31,127,179,0.25);
   }
   *{box-sizing:border-box;}
+  .hidden{ display:none !important; }
   body{
     margin:0;
     min-height:100vh;
@@ -462,11 +466,69 @@
     color:#fff; font-size:15px; font-weight:800; cursor:pointer;
   }
   .calc-apply-btn:active{ transform: scale(0.98); }
+
+  /* Login / signup screen (Firebase auth) */
+  .login-screen{
+    position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 45%, #f6fcff 100%); padding:20px;
+  }
+  .login-card{
+    background: var(--card); border-radius:18px; box-shadow: var(--shadow); padding:40px 32px;
+    width:min(400px,100%); text-align:center;
+  }
+  .login-icon{
+    width:52px; height:52px; border-radius:14px; background: var(--accent-pale); color: var(--accent-deep);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:1.4rem;
+  }
+  .login-title{ margin:0 0 8px; font-size:1.3rem; color: var(--text); }
+  .login-subtitle{ margin:0 0 22px; color: var(--text-soft); font-size:0.85rem; }
+  .login-card .field{ text-align:left; margin-bottom:12px; }
+  .login-card label{ display:block; font-size:0.78rem; color: var(--text-soft); margin-bottom:5px; }
+  .login-card input{
+    width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--line);
+    font-size:0.95rem; background:#fff; color: var(--text);
+  }
+  .login-card input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .auth-error{ color:#d6336c; font-size:0.8rem; min-height:1.1em; margin:0 0 10px; text-align:left; }
+  .login-submit-btn{
+    width:100%; padding:13px; border:none; border-radius:12px; background: var(--accent-deep);
+    color:#fff; font-size:0.95rem; font-weight:700; cursor:pointer; margin-top:4px;
+  }
+  .login-submit-btn:active{ transform: scale(0.98); }
+  .auth-switch{ margin:18px 0 0; font-size:0.82rem; color: var(--text-soft); }
+  .auth-switch a{ color: var(--accent-deep); font-weight:700; text-decoration:none; }
+  .auth-switch a:hover{ text-decoration:underline; }
 </style>
 </head>
 <body>
 
-<div class="wrap">
+<div class="login-screen hidden" id="loginScreen">
+  <div class="login-card">
+    <div class="login-icon">🔐</div>
+    <h1 class="login-title" id="authScreenTitle">로그인</h1>
+    <p class="login-subtitle" id="authScreenSubtitle">이메일과 비밀번호로 로그인하세요.</p>
+    <div class="field hidden" id="authNameRow">
+      <label>이름 (선택)</label>
+      <input type="text" id="authNameInput" placeholder="이름">
+    </div>
+    <div class="field">
+      <label>이메일</label>
+      <input type="email" id="authEmailInput" placeholder="you@example.com" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>비밀번호</label>
+      <input type="password" id="authPasswordInput" placeholder="6자 이상" autocomplete="current-password">
+    </div>
+    <p class="auth-error" id="authErrorText"></p>
+    <button type="button" class="login-submit-btn" id="authSubmitBtn">로그인</button>
+    <p class="auth-switch">
+      <span id="authSwitchText">계정이 없으신가요?</span>
+      <a href="#" id="authSwitchLink">회원가입</a>
+    </p>
+  </div>
+</div>
+
+<div class="wrap hidden" id="appRoot">
 
   <!-- HOME PAGE -->
   <div class="page active-page" id="page-home">
@@ -498,6 +560,16 @@
 
   <!-- SETTINGS PAGE (backup / privacy / terms / security) -->
   <div class="page" id="page-settings">
+    <!-- Account (Firebase auth) -->
+    <div class="card hidden" id="accountCard">
+      <h2><span class="dot"></span>계정</h2>
+      <p class="backup-desc">클라우드에 로그인되어 있으면, 쿠키·사이트 데이터를 지우거나 기기를 바꿔도 로그인만 다시 하면 기록을 그대로 불러와요.</p>
+      <div class="backup-status-line" id="accountEmailLine"></div>
+      <div class="backup-actions">
+        <button type="button" class="backup-btn secondary" id="logoutBtn">로그아웃</button>
+      </div>
+    </div>
+
     <!-- File auto-sync (File System Access API) -->
     <div class="card" id="fileSyncCard">
       <h2><span class="dot"></span>파일 자동 연동</h2>
@@ -708,7 +780,7 @@
 
 </div>
 
-<div class="bottom-nav" id="bottomNav">
+<div class="bottom-nav hidden" id="bottomNav">
   <button type="button" class="nav-btn active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">홈화면</span></button>
   <button type="button" class="nav-btn" data-page="record"><span class="nav-icon">🧾</span><span class="nav-label">기록</span></button>
   <button type="button" class="nav-btn" data-page="graph"><span class="nav-icon">📊</span><span class="nav-label">그래프</span></button>
@@ -769,6 +841,26 @@
   let fileHandle = null;
   let fileNeedsReauth = false;
 
+  /* ---------------- FIREBASE (로그인 + 클라우드 저장) ----------------
+     아래 값을 Firebase 콘솔 > 프로젝트 설정 > 내 앱 에서 나온 firebaseConfig로 교체하면
+     이메일/비밀번호 로그인 + 계정별 클라우드 저장이 자동으로 켜집니다.
+     교체하기 전까지는 로그인 화면 없이 브라우저 로컬 저장(localStorage) 방식으로 동작합니다. */
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBktDccRCcQhHqMjyG0_thIqiL6q5UJmo0",
+    authDomain: "gen-lang-client-0318342348.firebaseapp.com",
+    projectId: "gen-lang-client-0318342348",
+    storageBucket: "gen-lang-client-0318342348.firebasestorage.app",
+    messagingSenderId: "17011961109",
+    appId: "1:17011961109:web:6c04fa9ca21aa4d2200d1c"
+  };
+  const firebaseEnabled = FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY" && typeof firebase !== 'undefined';
+  let auth = null, db = null, currentUser = null;
+  if(firebaseEnabled){
+    firebase.initializeApp(FIREBASE_CONFIG);
+    auth = firebase.auth();
+    db = firebase.firestore();
+  }
+
   const defaultCats = {
     income: ['용돈','월급','부수입','기타수입'],
     expense: ['식비','교통','쇼핑','생활비','문화/여가','기타지출']
@@ -820,6 +912,7 @@
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
       writeFileIfConnected();
+      syncToCloud();
       return true;
     }catch(e){
       console.error('save entries failed', e);
@@ -831,12 +924,137 @@
     try{
       localStorage.setItem(CAT_KEY, JSON.stringify(state.categories));
       writeFileIfConnected();
+      syncToCloud();
       return true;
     }catch(e){
       console.error('save categories failed', e);
       showToast('저장 실패: 이 브라우저에서 저장 공간을 사용할 수 없어요', 'error');
       return false;
     }
+  }
+
+  // ====== Cloud sync (Firebase Auth + Firestore) ======
+  function syncToCloud(){
+    if(!firebaseEnabled || !currentUser) return;
+    db.collection('users').doc(currentUser.uid)
+      .set({ entries: state.entries, categories: state.categories })
+      .catch(err => { console.error('클라우드 저장 실패', err); showToast('클라우드 저장에 실패했어요', 'error'); });
+  }
+
+  async function loadFromCloud(user){
+    const ref = db.collection('users').doc(user.uid);
+    const snap = await ref.get();
+    if(snap.exists){
+      const data = snap.data();
+      state.entries = Array.isArray(data.entries) ? data.entries : [];
+      state.categories = data.categories || JSON.parse(JSON.stringify(defaultCats));
+    }else{
+      // first login on this account — upload whatever is on this device so nothing gets lost
+      await ref.set({ entries: state.entries, categories: state.categories });
+    }
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
+      localStorage.setItem(CAT_KEY, JSON.stringify(state.categories));
+    }catch(e){ /* not critical — Firestore is the source of truth once logged in */ }
+  }
+
+  const loginScreen = $('loginScreen');
+  const appRoot = $('appRoot');
+  const bottomNav = $('bottomNav');
+
+  function showApp(){
+    loginScreen.classList.add('hidden');
+    appRoot.classList.remove('hidden');
+    bottomNav.classList.remove('hidden');
+    const accountCard = $('accountCard');
+    if(currentUser){
+      accountCard.classList.remove('hidden');
+      $('accountEmailLine').textContent = `로그인 계정: ${currentUser.email}`;
+    }else{
+      accountCard.classList.add('hidden');
+    }
+  }
+  function showLoginScreenUI(){
+    appRoot.classList.add('hidden');
+    bottomNav.classList.add('hidden');
+    loginScreen.classList.remove('hidden');
+  }
+
+  let authMode = 'login'; // 'login' | 'signup'
+  const AUTH_ERROR_MESSAGES = {
+    'auth/invalid-email': '이메일 형식이 올바르지 않습니다.',
+    'auth/user-not-found': '가입되지 않은 이메일입니다.',
+    'auth/wrong-password': '비밀번호가 일치하지 않습니다.',
+    'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않습니다.',
+    'auth/email-already-in-use': '이미 가입된 이메일입니다.',
+    'auth/weak-password': '비밀번호는 6자 이상이어야 합니다.',
+    'auth/missing-password': '비밀번호를 입력해주세요.'
+  };
+  function setAuthMode(mode){
+    authMode = mode;
+    $('authErrorText').textContent = '';
+    if(mode === 'signup'){
+      $('authScreenTitle').textContent = '회원가입';
+      $('authScreenSubtitle').textContent = '이메일과 비밀번호로 새 계정을 만드세요.';
+      $('authSubmitBtn').textContent = '회원가입';
+      $('authSwitchText').textContent = '이미 계정이 있으신가요?';
+      $('authSwitchLink').textContent = '로그인';
+    }else{
+      $('authScreenTitle').textContent = '로그인';
+      $('authScreenSubtitle').textContent = '이메일과 비밀번호로 로그인하세요.';
+      $('authSubmitBtn').textContent = '로그인';
+      $('authSwitchText').textContent = '계정이 없으신가요?';
+      $('authSwitchLink').textContent = '회원가입';
+    }
+  }
+  if(firebaseEnabled){
+    $('authSwitchLink').onclick = (e)=>{
+      e.preventDefault();
+      setAuthMode(authMode === 'login' ? 'signup' : 'login');
+    };
+
+    let authSubmitInFlight = false;
+    async function handleAuthSubmit(){
+      if(authSubmitInFlight) return;
+      const email = $('authEmailInput').value.trim();
+      const password = $('authPasswordInput').value;
+      const errorEl = $('authErrorText');
+      errorEl.textContent = '';
+      if(!email){ errorEl.textContent = '이메일을 입력해주세요.'; return; }
+      authSubmitInFlight = true;
+      try{
+        if(authMode === 'signup'){
+          await auth.createUserWithEmailAndPassword(email, password);
+        }else{
+          await auth.signInWithEmailAndPassword(email, password);
+        }
+      }catch(e){
+        errorEl.textContent = AUTH_ERROR_MESSAGES[e.code] || ('오류: ' + e.message);
+      }finally{
+        authSubmitInFlight = false;
+      }
+    }
+    $('authSubmitBtn').addEventListener('click', handleAuthSubmit);
+    $('authPasswordInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') handleAuthSubmit(); });
+
+    $('logoutBtn').addEventListener('click', ()=>{ auth.signOut(); });
+
+    auth.onAuthStateChanged(async (user)=>{
+      if(user){
+        currentUser = user;
+        try{
+          await loadFromCloud(user);
+        }catch(e){
+          console.error('클라우드 불러오기 실패', e);
+          showToast('클라우드에서 기록을 불러오지 못했어요', 'error');
+        }
+        showApp();
+        renderAll();
+      }else{
+        currentUser = null;
+        showLoginScreenUI();
+      }
+    });
   }
 
   // ====== File auto-sync (File System Access API) ======
@@ -1919,6 +2137,8 @@
     else if(savedFilter) state.selectedDate = savedFilter; // user pinned a specific date
     else state.selectedDate = todayStr(); // first-ever run: show today's records right away
     renderAll();
+    if(!firebaseEnabled) showApp(); // no cloud login configured — behave exactly as a local-only app
+    // when firebaseEnabled is true, onAuthStateChanged (registered above) decides login screen vs app
   }
   init();
 })();

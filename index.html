@@ -1054,7 +1054,22 @@
     $('authSubmitBtn').addEventListener('click', handleAuthSubmit);
     $('authPasswordInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') handleAuthSubmit(); });
 
-    $('logoutBtn').addEventListener('click', ()=>{ auth.signOut(); });
+    $('logoutBtn').addEventListener('click', async ()=>{
+      await auth.signOut();
+      // wipe this device's local copy so the next account that logs in here
+      // never inherits (or accidentally uploads) the previous account's records
+      state.entries = [];
+      state.categories = JSON.parse(JSON.stringify(defaultCats));
+      state.selectedDate = null;
+      state.editingId = null;
+      state.selectedIds.clear();
+      try{
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(CAT_KEY);
+      }catch(e){ /* not critical */ }
+      if(fileHandle){ await disconnectFile(); } // don't keep writing into another account's connected backup file
+      renderAll();
+    });
 
     auth.onAuthStateChanged(async (user)=>{
       if(user){

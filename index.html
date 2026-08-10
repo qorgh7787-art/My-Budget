@@ -489,6 +489,13 @@
     font-size:0.95rem; background:#fff; color: var(--text);
   }
   .login-card input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .pw-row{ display:flex; gap:8px; }
+  .pw-row input{ flex:1; }
+  .pw-toggle-btn{
+    flex-shrink:0; padding:0 14px; border-radius:10px; border:1px solid var(--line);
+    background:#fff; color: var(--text-soft); font-size:0.82rem; font-weight:600; cursor:pointer;
+  }
+  .pw-toggle-btn:active{ background: var(--card-soft); }
   .auth-error{ color:#d6336c; font-size:0.8rem; min-height:1.1em; margin:0 0 10px; text-align:left; }
   .login-submit-btn{
     width:100%; padding:13px; border:none; border-radius:12px; background: var(--accent-deep);
@@ -513,11 +520,14 @@
     </div>
     <div class="field">
       <label>이메일</label>
-      <input type="email" id="authEmailInput" placeholder="you@example.com" autocomplete="username">
+      <input type="email" id="authEmailInput" placeholder="you@example.com" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
     </div>
     <div class="field">
       <label>비밀번호</label>
-      <input type="password" id="authPasswordInput" placeholder="6자 이상" autocomplete="current-password">
+      <div class="pw-row">
+        <input type="password" id="authPasswordInput" placeholder="6자 이상" autocomplete="current-password">
+        <button type="button" id="authPwToggleBtn" class="pw-toggle-btn">보기</button>
+      </div>
     </div>
     <p class="auth-error" id="authErrorText"></p>
     <button type="button" class="login-submit-btn" id="authSubmitBtn">로그인</button>
@@ -1013,11 +1023,18 @@
       setAuthMode(authMode === 'login' ? 'signup' : 'login');
     };
 
+    $('authPwToggleBtn').addEventListener('click', ()=>{
+      const pwInput = $('authPasswordInput');
+      const showing = pwInput.type === 'text';
+      pwInput.type = showing ? 'password' : 'text';
+      $('authPwToggleBtn').textContent = showing ? '보기' : '숨기기';
+    });
+
     let authSubmitInFlight = false;
     async function handleAuthSubmit(){
       if(authSubmitInFlight) return;
       const email = $('authEmailInput').value.trim();
-      const password = $('authPasswordInput').value;
+      const password = $('authPasswordInput').value.trim();
       const errorEl = $('authErrorText');
       errorEl.textContent = '';
       if(!email){ errorEl.textContent = '이메일을 입력해주세요.'; return; }

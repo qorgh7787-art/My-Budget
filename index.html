@@ -50,6 +50,16 @@
   }
   *{box-sizing:border-box;}
   .hidden{ display:none !important; }
+  /* Short UI labels stay on one line; long-form descriptive text keeps wrapping */
+  h1, h2, label, button, .nav-label, .tile .label, .tile .value,
+  .legend-row .name, .legend-row .amt, .cat-manage-item .name,
+  .cal-filter-label, .backup-status-line, .login-title, .auth-switch,
+  th, td { white-space: nowrap; }
+  .backup-desc, .login-subtitle, .list-hint, .empty-msg,
+  .auth-error, .footer-panel p, .footer-panel li {
+    white-space: normal;
+  }
+  td { overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
   body{
     margin:0;
     min-height:100vh;
@@ -411,14 +421,6 @@
     background: var(--card-soft); color: var(--accent-deep); border:1.5px solid var(--accent-pale);
   }
 
-  /* File sync (File System Access API) */
-  .filesync-status{
-    display:inline-block; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px;
-    background: var(--card-soft); color: var(--text-soft); margin-bottom:12px;
-  }
-  .filesync-status.connected{ background: var(--income-bg); color: var(--income); }
-  .filesync-status.needs-auth{ background: var(--expense-bg); color: var(--expense); }
-  .filesync-note{ font-size:12px; color: var(--text-soft); margin:10px 2px 0; line-height:1.5; }
   .backup-status-line{
     font-size:12px; color: var(--text-soft); margin:-4px 0 14px; display:flex; align-items:center; gap:6px;
   }
@@ -578,18 +580,6 @@
       <div class="backup-actions">
         <button type="button" class="backup-btn secondary" id="logoutBtn">로그아웃</button>
       </div>
-    </div>
-
-    <!-- File auto-sync (File System Access API) -->
-    <div class="card" id="fileSyncCard">
-      <h2><span class="dot"></span>파일 자동 연동</h2>
-      <p class="backup-desc">내 PC의 실제 파일과 연동해두면, 브라우저에서 쿠키·사이트 데이터를 지워도 그 파일에는 기록이 그대로 남아있어요. 저장할 때마다 자동으로 이 파일에도 함께 저장됩니다.</p>
-      <div class="filesync-status" id="fileSyncStatus">연동 안 됨</div>
-      <div class="backup-actions">
-        <button type="button" class="backup-btn" id="fileSyncConnectBtn">🔗 파일과 연동하기</button>
-        <button type="button" class="backup-btn secondary" id="fileSyncDisconnectBtn" style="display:none;">연동 해제</button>
-      </div>
-      <p class="filesync-note" id="fileSyncNote"></p>
     </div>
 
     <!-- Backup / restore -->
@@ -840,16 +830,12 @@
   const STORAGE_KEY = 'yeongseon_ledger_entries';
   const CAT_KEY = 'yeongseon_ledger_categories';
   const LAST_EXPORT_KEY = 'yeongseon_ledger_last_export_at';
-  const FS_HANDLE_DB = 'yeongseon_ledger_fs';
   const LIST_FILTER_KEY = 'yeongseon_ledger_list_filter';
   const LIST_FILTER_ALL = '__ALL__';
 
   function saveListFilter(){
     try{ localStorage.setItem(LIST_FILTER_KEY, state.selectedDate || LIST_FILTER_ALL); }catch(e){ /* not critical */ }
   }
-  const FS_SUPPORTED = typeof window.showSaveFilePicker === 'function';
-  let fileHandle = null;
-  let fileNeedsReauth = false;
 
   /* ---------------- FIREBASE (로그인 + 클라우드 저장) ----------------
      아래 값을 Firebase 콘솔 > 프로젝트 설정 > 내 앱 에서 나온 firebaseConfig로 교체하면
@@ -921,7 +907,6 @@
   async function saveEntries(){
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
-      writeFileIfConnected();
       syncToCloud();
       return true;
     }catch(e){
@@ -933,7 +918,6 @@
   async function saveCategories(){
     try{
       localStorage.setItem(CAT_KEY, JSON.stringify(state.categories));
-      writeFileIfConnected();
       syncToCloud();
       return true;
     }catch(e){
@@ -1067,63 +1051,27 @@
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(CAT_KEY);
       }catch(e){ /* not critical */ }
-      if(fileHandle){ await disconnectFile(); } // don't keep writing into another account's connected backup file
       renderAll();
     });
 
     auth.onAuthStateChanged(async (user)=>{
       if(user){
         currentUser = user;
+        // show the app instantly with whatever's cached locally — don't make the user
+        // stare at a blank screen while we wait on a Firestore round trip
+        showApp();
+        renderAll();
         try{
           await loadFromCloud(user);
+          renderAll(); // refresh once the authoritative cloud copy arrives
         }catch(e){
           console.error('클라우드 불러오기 실패', e);
           showToast('클라우드에서 기록을 불러오지 못했어요', 'error');
         }
-        showApp();
-        renderAll();
       }else{
         currentUser = null;
         showLoginScreenUI();
       }
-    });
-  }
-
-  // ====== File auto-sync (File System Access API) ======
-  // Lets a browser-side FileSystemFileHandle survive page reloads. Handles are
-  // structured-cloneable, so IndexedDB (not localStorage/JSON) can store them.
-  function idbOpen(){
-    return new Promise((resolve, reject)=>{
-      const req = indexedDB.open(FS_HANDLE_DB, 1);
-      req.onupgradeneeded = () => req.result.createObjectStore('kv');
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-  }
-  async function idbGet(key){
-    const db = await idbOpen();
-    return new Promise((resolve, reject)=>{
-      const r = db.transaction('kv','readonly').objectStore('kv').get(key);
-      r.onsuccess = () => resolve(r.result);
-      r.onerror = () => reject(r.error);
-    });
-  }
-  async function idbSet(key, val){
-    const db = await idbOpen();
-    return new Promise((resolve, reject)=>{
-      const tx = db.transaction('kv','readwrite');
-      tx.objectStore('kv').put(val, key);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-  async function idbDel(key){
-    const db = await idbOpen();
-    return new Promise((resolve, reject)=>{
-      const tx = db.transaction('kv','readwrite');
-      tx.objectStore('kv').delete(key);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
     });
   }
 
@@ -1134,131 +1082,6 @@
       entries: state.entries,
       categories: state.categories
     };
-  }
-
-  async function writeFileIfConnected(){
-    if(!fileHandle) return;
-    try{
-      const granted = (await fileHandle.queryPermission({ mode: 'readwrite' })) === 'granted';
-      if(!granted){
-        fileNeedsReauth = true;
-        updateFileSyncUI();
-        return;
-      }
-      const writable = await fileHandle.createWritable();
-      await writable.write(JSON.stringify(backupPayload(), null, 2));
-      await writable.close();
-      if(fileNeedsReauth){ fileNeedsReauth = false; updateFileSyncUI(); }
-    }catch(e){
-      console.error('file sync failed', e);
-      showToast('연동된 파일에 저장하지 못했어요', 'error');
-    }
-  }
-
-  async function connectFile(){
-    if(!FS_SUPPORTED){
-      showToast('이 브라우저는 파일 연동을 지원하지 않아요', 'error');
-      return;
-    }
-    let handle;
-    try{
-      handle = await window.showSaveFilePicker({
-        suggestedName: '나만의가계부_데이터.json',
-        types: [{ description: 'JSON 파일', accept: { 'application/json': ['.json'] } }]
-      });
-    }catch(e){
-      if(e.name !== 'AbortError'){ console.error(e); showToast('파일 연동에 실패했어요', 'error'); }
-      return;
-    }
-
-    let imported = false;
-    try{
-      const file = await handle.getFile();
-      const text = await file.text();
-      if(text && text.trim()){
-        const data = JSON.parse(text);
-        if(data && Array.isArray(data.entries)){
-          if(confirm(`선택한 파일에 저장된 기록(${data.entries.length}건)이 있어요. 그 내용을 불러올까요?\n(취소하면 지금 화면의 기록을 이 파일에 저장합니다)`)){
-            cancelEdit();
-            state.selectedIds.clear();
-            state.entries = data.entries;
-            if(data.categories) state.categories = data.categories;
-            imported = true;
-          }
-        }
-      }
-    }catch(e){ /* file empty, unreadable, or not valid JSON — treat as a fresh file */ }
-
-    fileHandle = handle;
-    fileNeedsReauth = false;
-    try{ await idbSet('fileHandle', handle); }catch(e){ console.error('failed to remember file handle', e); }
-
-    await saveEntries();
-    await saveCategories();
-    renderAll();
-    updateFileSyncUI();
-    showToast(imported ? '파일을 불러와 연동했어요 🔗' : '파일과 연동했어요 🔗');
-  }
-
-  async function reauthFile(){
-    if(!fileHandle) return;
-    try{
-      const granted = (await fileHandle.requestPermission({ mode: 'readwrite' })) === 'granted';
-      if(granted){
-        fileNeedsReauth = false;
-        await writeFileIfConnected();
-        updateFileSyncUI();
-        showToast('파일 연동을 다시 확인했어요 🔗');
-      }else{
-        showToast('파일 접근 권한이 거부됐어요', 'error');
-      }
-    }catch(e){
-      console.error(e);
-      showToast('재연결에 실패했어요', 'error');
-    }
-  }
-
-  async function disconnectFile(){
-    fileHandle = null;
-    fileNeedsReauth = false;
-    try{ await idbDel('fileHandle'); }catch(e){ /* not critical */ }
-    updateFileSyncUI();
-    showToast('파일 연동을 해제했어요');
-  }
-
-  function updateFileSyncUI(){
-    const statusEl = $('fileSyncStatus');
-    const connectBtn = $('fileSyncConnectBtn');
-    const disconnectBtn = $('fileSyncDisconnectBtn');
-    const noteEl = $('fileSyncNote');
-    if(!statusEl) return;
-
-    if(!FS_SUPPORTED){
-      statusEl.textContent = '이 브라우저는 지원하지 않음';
-      statusEl.className = 'filesync-status';
-      connectBtn.style.display = 'none';
-      disconnectBtn.style.display = 'none';
-      noteEl.textContent = 'Chrome, Edge, Whale 등 PC용 최신 브라우저에서 이용할 수 있어요. 대신 아래 백업 파일 기능을 사용해주세요.';
-      return;
-    }
-
-    if(fileHandle){
-      statusEl.textContent = fileNeedsReauth ? `연동됨: ${fileHandle.name} (재연결 필요)` : `연동됨: ${fileHandle.name}`;
-      statusEl.className = 'filesync-status ' + (fileNeedsReauth ? 'needs-auth' : 'connected');
-      connectBtn.textContent = fileNeedsReauth ? '↻ 다시 연결 확인' : '🔗 다른 파일로 변경';
-      connectBtn.style.display = 'block';
-      disconnectBtn.style.display = 'block';
-      noteEl.textContent = fileNeedsReauth
-        ? '브라우저 보안 정책상 재확인이 필요해요. 버튼을 눌러 다시 허용해주세요.'
-        : '기록을 저장할 때마다 이 파일에도 자동으로 함께 저장돼요.';
-    }else{
-      statusEl.textContent = '연동 안 됨';
-      statusEl.className = 'filesync-status';
-      connectBtn.textContent = '🔗 파일과 연동하기';
-      connectBtn.style.display = 'block';
-      disconnectBtn.style.display = 'none';
-      noteEl.textContent = '';
-    }
   }
 
   function renderBackupStatus(){
@@ -1679,13 +1502,6 @@
     renderBackupStatus();
     showToast('백업 파일을 내보냈어요 ⬇️');
   });
-
-  // File auto-sync (File System Access API)
-  $('fileSyncConnectBtn').addEventListener('click', ()=>{
-    if(fileHandle && fileNeedsReauth) reauthFile();
-    else connectFile();
-  });
-  $('fileSyncDisconnectBtn').addEventListener('click', disconnectFile);
 
   $('importBtn').addEventListener('click', ()=> $('importFileInput').click());
 
@@ -2152,16 +1968,6 @@
       try{ await navigator.storage.persist(); }catch(e){ /* not critical if this fails */ }
     }
     await loadData();
-    if(FS_SUPPORTED){
-      try{
-        const stored = await idbGet('fileHandle');
-        if(stored){
-          fileHandle = stored;
-          fileNeedsReauth = (await fileHandle.queryPermission({ mode: 'readwrite' })) !== 'granted';
-        }
-      }catch(e){ /* no remembered file, or browser blocked IndexedDB — fall back to browser storage only */ }
-    }
-    updateFileSyncUI();
     setType('income');
     setPeriod('day');
     const savedFilter = localStorage.getItem(LIST_FILTER_KEY);

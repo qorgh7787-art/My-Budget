@@ -445,6 +445,11 @@
     flex-shrink:0; border:none; border-radius:8px; padding:7px 12px; font-size:12.5px; font-weight:700;
     cursor:pointer; background: var(--income); color:#fff;
   }
+  .member-item .member-actions{ display:flex; gap:6px; flex-shrink:0; }
+  .member-item .remove-member-btn{
+    flex-shrink:0; border:none; border-radius:8px; padding:7px 12px; font-size:12.5px; font-weight:700;
+    cursor:pointer; background: var(--expense-bg); color: var(--expense);
+  }
 
   /* Inquiries (문의사항) */
   .inquiry-textarea{
@@ -1148,7 +1153,10 @@
           <div class="email">${escapeHtml(m.email || '(이메일 없음)')}${m.isAdmin ? ' <span class="pinned-tag">관리자</span>' : ''}</div>
           <div class="meta">${fmtInquiryDate(m.createdAt)} 가입 · ${m.approved ? '승인됨' : '승인 대기'}</div>
         </div>
-        ${!m.approved ? `<button type="button" class="approve-btn" data-uid="${m.uid}">✓ 승인</button>` : ''}
+        <div class="member-actions">
+          ${!m.approved ? `<button type="button" class="approve-btn" data-uid="${m.uid}">✓ 승인</button>` : ''}
+          ${!m.isAdmin ? `<button type="button" class="remove-member-btn" data-uid="${m.uid}">제거</button>` : ''}
+        </div>
       </div>
     `).join('');
   }
@@ -1165,7 +1173,26 @@
     }
   }
 
+  async function removeMember(uid){
+    try{
+      await userDirCol().doc(uid).delete();
+      await loadAllMembers();
+      renderAdminMembers();
+      showToast('회원을 제거했어요 🗑️');
+    }catch(e){
+      console.error(e);
+      showToast('제거에 실패했어요', 'error');
+    }
+  }
+
   $('adminMemberList').addEventListener('click', (e)=>{
+    const removeBtn = e.target.closest('.remove-member-btn');
+    if(removeBtn){
+      const m = allMembers.find(x => x.uid === removeBtn.dataset.uid);
+      if(!confirm(`'${m ? m.email : ''}' 회원을 목록에서 제거하시겠습니까?\n(다시 로그인하면 승인 대기 상태로 재등록돼요. 가계부 기록 자체는 삭제되지 않아요.)`)) return;
+      removeMember(removeBtn.dataset.uid);
+      return;
+    }
     const btn = e.target.closest('.approve-btn');
     if(!btn) return;
     approveMember(btn.dataset.uid);

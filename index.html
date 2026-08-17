@@ -717,12 +717,15 @@
       <div class="footer-accordion">
         <button type="button" class="footer-link" data-panel="privacy">개인정보처리방침</button>
         <div class="footer-panel" id="panel-privacy">
-          <p><b>나만의 가계부</b>는 별도의 서버나 데이터베이스를 사용하지 않는 개인용 웹 애플리케이션입니다.</p>
+          <p><b>나만의 가계부</b>는 이메일 계정으로 로그인해서 이용하는 개인용 가계부 웹 서비스입니다.</p>
           <ul>
-            <li>입력하신 수입·지출 기록은 오직 사용 중인 <b>브라우저의 로컬 저장소</b>에만 저장되며, 어떤 외부 서버로도 전송되지 않습니다.</li>
-            <li>개발자를 포함한 그 누구도 사용자의 기록 내용을 열람할 수 없습니다.</li>
-            <li>기록은 기기·브라우저별로 따로 저장되며, 브라우저 데이터를 삭제하거나 기기를 바꾸면 이전 기록은 복구되지 않습니다.</li>
-            <li>화면 표시를 위해 글꼴(Google Fonts)과 그래프 라이브러리(Chart.js)를 외부 CDN에서 불러오며, 이 과정에서 해당 서비스에 최소한의 접속 정보(예: IP 주소)가 전달될 수 있습니다. 이는 각 서비스 제공자의 자체 정책을 따릅니다.</li>
+            <li>입력하신 수입·지출 기록은 로그인한 계정에 연결되어 <b>클라우드(Firebase/Firestore)</b>에 저장되며, 빠른 표시를 위해 사용 중인 브라우저에도 함께 캐시됩니다.</li>
+            <li>가계부 기록은 보안 규칙에 따라 <b>본인 계정으로 로그인했을 때만</b> 열람·수정할 수 있으며, 운영자를 포함한 다른 사람은 다른 사용자의 수입·지출 내역(금액, 카테고리, 메모 등)을 볼 수 없습니다.</li>
+            <li>회원가입 시 이메일·비밀번호가 Firebase Authentication에 안전하게 저장되며, 비밀번호는 운영자를 포함해 누구도 볼 수 없습니다.</li>
+            <li>회원가입 후에는 운영자 승인이 있어야 서비스를 이용할 수 있으며, 승인 과정에서 가입 이메일이 운영자에게 표시됩니다.</li>
+            <li>설정의 "문의사항"을 통해 등록한 문의 내용과 가입 이메일은 운영자가 확인하고 답변할 수 있습니다. 문의란에는 민감한 개인정보를 남기지 말아주세요.</li>
+            <li>계정을 탈퇴하면 계정 정보와 저장된 가계부 기록이 영구적으로 삭제되며 복구할 수 없습니다.</li>
+            <li>화면 표시 및 서비스 제공을 위해 Google Fonts, Chart.js, Firebase를 외부에서 불러오며, 이 과정에서 해당 서비스에 최소한의 접속 정보(예: IP 주소)가 전달될 수 있습니다. 이는 각 서비스 제공자의 자체 정책을 따릅니다.</li>
             <li>개인정보 관련 문의는 하단 이메일로 연락해주세요.</li>
           </ul>
         </div>
@@ -733,7 +736,8 @@
           <ul>
             <li>본 앱은 있는 그대로("as-is") 제공되며, 데이터 손실·저장 실패·표시 오류 등에 대해 어떠한 보증도 하지 않습니다.</li>
             <li>재무 판단, 세무 신고 등 중요한 목적에는 반드시 별도의 검증을 거쳐 사용하시기 바랍니다.</li>
-            <li>사용자는 본인의 책임 하에 앱을 이용하며, 중요한 기록은 정기적으로 별도 백업(캡처, 메모 등)해두시길 권장합니다.</li>
+            <li>회원가입 후 운영자 승인이 필요하며, 운영자는 부적절한 이용이 확인될 경우 계정 승인을 보류하거나 회원 목록에서 제거할 수 있습니다.</li>
+            <li>사용자는 본인의 책임 하에 앱을 이용하며, 중요한 기록은 설정의 "백업 파일 내보내기"로 정기적으로 별도 보관해두시길 권장합니다.</li>
             <li>서비스 내용은 사전 고지 없이 변경되거나 중단될 수 있습니다.</li>
           </ul>
         </div>
@@ -741,10 +745,12 @@
         <button type="button" class="footer-link" data-panel="security">보안 안내</button>
         <div class="footer-panel" id="panel-security">
           <ul>
-            <li>모든 데이터는 사용자의 기기 안에만 저장되며, 별도의 로그인 절차가 없습니다. 같은 기기·같은 브라우저를 쓰는 다른 사람도 기록에 접근할 수 있으니, 공용 기기에서는 주의해주세요.</li>
+            <li>로그인은 Firebase Authentication을 통해 안전하게 처리되며, 가계부 기록은 Firestore 보안 규칙에 따라 본인 계정으로 로그인한 사용자만 접근할 수 있습니다.</li>
+            <li>운영자는 회원 승인 관리와 문의사항(이메일·문의 내용)만 확인할 수 있으며, 개인 가계부 기록(수입·지출 내역)은 확인할 수 없습니다.</li>
             <li>서비스는 HTTPS로 암호화된 연결을 통해 제공됩니다.</li>
-            <li>브라우저의 시크릿/비공개 모드에서는 저장 기능이 제한되어 기록이 저장되지 않을 수 있습니다.</li>
-            <li>비밀번호, 계좌번호, 카드번호 등 민감한 금융 정보는 메모란에 입력하지 않는 것을 권장합니다.</li>
+            <li>한 번 로그인하면 해당 기기에 로그인 상태가 유지돼요. 공용 기기에서 이용하셨다면 사용 후 반드시 설정에서 로그아웃해주세요.</li>
+            <li>브라우저의 시크릿/비공개 모드에서는 일부 저장 기능이 제한될 수 있습니다.</li>
+            <li>비밀번호, 계좌번호, 카드번호 등 민감한 금융 정보는 메모란이나 문의란에 입력하지 않는 것을 권장합니다.</li>
           </ul>
         </div>
       </div>
@@ -1155,7 +1161,7 @@
         </div>
         <div class="member-actions">
           ${!m.approved ? `<button type="button" class="approve-btn" data-uid="${m.uid}">✓ 승인</button>` : ''}
-          ${!m.isAdmin ? `<button type="button" class="remove-member-btn" data-uid="${m.uid}">제거</button>` : ''}
+          ${m.email !== ADMIN_EMAIL ? `<button type="button" class="remove-member-btn" data-uid="${m.uid}">제거</button>` : ''}
         </div>
       </div>
     `).join('');
@@ -1205,28 +1211,32 @@
 
   function inquiriesCol(){ return db.collection('inquiries'); }
 
-  async function loadMyInquiries(){
-    if(!firebaseEnabled || !currentUser){ myInquiries = []; return; }
-    try{
-      const snap = await inquiriesCol().where('uid', '==', currentUser.uid).get();
+  let myInquiriesUnsubscribe = null;
+  let allInquiriesUnsubscribe = null;
+
+  // Live listeners — new/edited/answered inquiries show up without needing a manual refresh
+  function startInquiriesListeners(){
+    stopInquiriesListeners();
+    if(!firebaseEnabled || !currentUser) return;
+
+    myInquiriesUnsubscribe = inquiriesCol().where('uid', '==', currentUser.uid).onSnapshot(snap=>{
       myInquiries = snap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
-    }catch(e){
-      console.error('내 문의 불러오기 실패', e);
-      myInquiries = [];
+      renderMyInquiries();
+    }, e => console.error('내 문의 실시간 갱신 실패', e));
+
+    if(isAdmin()){
+      allInquiriesUnsubscribe = inquiriesCol().onSnapshot(snap=>{
+        allInquiries = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+        renderAdminInquiries();
+      }, e => console.error('전체 문의 실시간 갱신 실패', e));
     }
   }
 
-  async function loadAllInquiries(){
-    if(!firebaseEnabled || !isAdmin()){ allInquiries = []; return; }
-    try{
-      const snap = await inquiriesCol().get();
-      allInquiries = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
-    }catch(e){
-      console.error('전체 문의 불러오기 실패', e);
-      allInquiries = [];
-    }
+  function stopInquiriesListeners(){
+    if(myInquiriesUnsubscribe){ myInquiriesUnsubscribe(); myInquiriesUnsubscribe = null; }
+    if(allInquiriesUnsubscribe){ allInquiriesUnsubscribe(); allInquiriesUnsubscribe = null; }
   }
 
   function fmtInquiryDate(ts){
@@ -1296,8 +1306,6 @@
         uid: currentUser.uid, email: currentUser.email, text,
         status: 'pending', adminReply: '', createdAt: Date.now()
       });
-      await loadMyInquiries();
-      renderMyInquiries();
       showToast('문의가 등록되었습니다');
     }catch(e){
       console.error(e);
@@ -1308,8 +1316,6 @@
   async function updateInquiryText(id, newText){
     try{
       await inquiriesCol().doc(id).update({ text: newText });
-      await loadMyInquiries();
-      renderMyInquiries();
       showToast('문의를 수정했어요');
     }catch(e){
       console.error(e);
@@ -1321,8 +1327,6 @@
     try{
       await Promise.all(ids.map(id => inquiriesCol().doc(id).delete()));
       selectedInquiryIds.clear();
-      await loadMyInquiries();
-      renderMyInquiries();
       showToast(ids.length > 1 ? `${ids.length}건 삭제했어요 🗑️` : '삭제했어요 🗑️');
     }catch(e){
       console.error(e);
@@ -1333,8 +1337,6 @@
   async function saveAdminReply(id, replyText){
     try{
       await inquiriesCol().doc(id).update({ adminReply: replyText, status: replyText.trim() ? 'answered' : 'pending' });
-      await loadAllInquiries();
-      renderAdminInquiries();
       showToast('답변을 저장했어요');
     }catch(e){
       console.error(e);
@@ -1345,8 +1347,6 @@
   async function adminDeleteInquiry(id){
     try{
       await inquiriesCol().doc(id).delete();
-      await loadAllInquiries();
-      renderAdminInquiries();
       showToast('삭제했어요 🗑️');
     }catch(e){
       console.error(e);
@@ -1565,16 +1565,13 @@
       // stare at a blank screen while we wait on a Firestore round trip
       showApp();
       renderAll();
+      startInquiriesListeners(); // live updates — new/answered inquiries show up without a manual refresh
       try{
         await Promise.all([
           loadFromCloud(user),
-          loadMyInquiries(),
-          loadAllInquiries(),
           loadAllMembers()
         ]);
         renderAll(); // refresh once the authoritative cloud copy arrives
-        renderMyInquiries();
-        renderAdminInquiries();
         renderAdminMembers();
       }catch(e){
         console.error('클라우드 불러오기 실패', e);
@@ -1591,6 +1588,7 @@
       }else{
         currentUser = null;
         userDirectoryEntry = null;
+        stopInquiriesListeners();
         myInquiries = [];
         allInquiries = [];
         allMembers = [];

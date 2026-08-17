@@ -1,0 +1,29 @@
+{
+  "categories": [
+    {
+      "id": "general",
+      "name": "일반",
+      "color": "#3fa9d6"
+    },
+    {
+      "id": "work",
+      "name": "업무",
+      "color": "#f4a261"
+    },
+    {
+      "id": "idea",
+      "name": "아이디어",
+      "color": "#9b8cf2"
+    },
+    {
+      "id": "msijwj2iteioa",
+      "name": "여행",
+      "color": "#3fa9d6"
+    }
+  ],
+  "notes": [],
+  "profile": {
+    "name": "지수",
+    "color": "#3fa9d6"
+  }
+}

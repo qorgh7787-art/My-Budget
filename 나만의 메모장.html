@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<!-- saved from url=(0036)https://notepad-app-jade.vercel.app/ -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나만의 메모장</title>
+<style>
+  :root{
+    --bg1:#bfe9f7;
+    --bg2:#eaf7ff;
+    --card:#ffffff;
+    --text:#2b3a4a;
+    --muted:#6d8296;
+    --accent:#3fa9d6;
+    --border:#d8ecf5;
+    --shadow:0 8px 24px rgba(63,169,214,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI','Malgun Gothic',sans-serif;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 60%);
+    color:var(--text);
+    display:flex;
+    flex-direction:column;
+  }
+  .app{
+    max-width:1100px;
+    margin:0 auto;
+    padding:28px 20px 0;
+    width:100%;
+    flex:1;
+  }
+  header{
+    text-align:center;
+    margin-bottom:20px;
+  }
+  header h1{
+    font-size:2.1rem;
+    margin:0 0 6px;
+    color:#20647f;
+  }
+  header p{
+    margin:0;
+    color:var(--muted);
+    font-size:0.95rem;
+  }
+  .tabs{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    margin-bottom:24px;
+  }
+  .tab-btn{
+    border:none;
+    background:rgba(255,255,255,0.6);
+    color:var(--muted);
+    padding:10px 22px;
+    border-radius:999px;
+    font-size:0.95rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .tab-btn.active{
+    background:var(--accent);
+    color:#fff;
+    box-shadow:0 6px 14px rgba(63,169,214,0.35);
+  }
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .panel{
+    background:var(--card);
+    border-radius:18px;
+    box-shadow:var(--shadow);
+    padding:20px;
+  }
+  .panel h2{
+    margin:0 0 14px;
+    font-size:1.05rem;
+    color:#1f5a73;
+  }
+
+  /* ---- HOME ---- */
+  .note-toolbar{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;
+  }
+  .search-box{
+    flex:1;min-width:180px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);font-size:0.92rem;
+  }
+  .btn{
+    border:none;border-radius:9px;padding:9px 14px;font-size:0.9rem;
+    cursor:pointer;font-weight:600;transition:filter .15s;
+  }
+  .btn:hover{filter:brightness(0.95);}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-outline{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+  .btn-small{padding:6px 10px;font-size:0.8rem;}
+  .notes-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+    gap:16px;
+  }
+  .note-card{
+    background:#fff;
+    border-radius:14px;
+    padding:16px;
+    box-shadow:0 6px 16px rgba(63,169,214,0.12);
+    border-left:6px solid var(--accent);
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-height:140px;
+    transition:transform .12s;
+  }
+  .note-card:hover{transform:translateY(-2px);}
+  .note-card .cat-tag{
+    align-self:flex-start;
+    font-size:0.72rem;
+    padding:3px 9px;
+    border-radius:999px;
+    color:#fff;
+    font-weight:600;
+  }
+  .note-card h3{
+    margin:0;font-size:1.05rem;color:var(--text);word-break:break-word;
+  }
+  .note-card p{
+    margin:0;font-size:0.88rem;color:var(--muted);
+    white-space:pre-wrap;word-break:break-word;
+    flex:1;
+    max-height:110px;
+    overflow:hidden;
+  }
+  .note-meta{
+    font-size:0.72rem;color:#9fb2c2;
+  }
+  .note-card-actions{
+    display:flex;gap:8px;justify-content:flex-end;
+  }
+  .empty-state{
+    grid-column:1/-1;text-align:center;color:var(--muted);padding:50px 10px;
+  }
+
+  /* ---- LIST VIEW (calendar) ---- */
+  .list-layout{
+    display:grid;
+    grid-template-columns:320px 1fr;
+    gap:22px;
+  }
+  @media (max-width:800px){
+    .list-layout{grid-template-columns:1fr;}
+  }
+  .cal-header{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;
+  }
+  .cal-header .cal-title{font-weight:700;color:#1f5a73;font-size:1.02rem;}
+  .cal-nav-btn{
+    border:none;background:#eaf7ff;color:var(--accent);width:30px;height:30px;border-radius:8px;
+    cursor:pointer;font-size:1rem;
+  }
+  .cal-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+    text-align:center;
+  }
+  .cal-dow{font-size:0.75rem;color:var(--muted);padding:4px 0;font-weight:600;}
+  .cal-day{
+    position:relative;
+    padding:8px 0;
+    border-radius:9px;
+    font-size:0.88rem;
+    cursor:pointer;
+    color:var(--text);
+    background:#f4fbfe;
+  }
+  .cal-day.empty{visibility:hidden;cursor:default;background:transparent;}
+  .cal-day:hover{background:#e2f4fb;}
+  .cal-day.today{border:1px solid var(--accent);}
+  .cal-day.selected{background:var(--accent);color:#fff;}
+  .cal-day .dot{
+    position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
+    width:5px;height:5px;border-radius:50%;background:#f4a261;
+  }
+  .cal-day.selected .dot{background:#fff;}
+  .cal-footer{
+    display:flex;justify-content:space-between;margin-top:14px;
+  }
+  .selected-date-label{
+    font-weight:700;color:#1f5a73;margin-bottom:14px;font-size:1.05rem;
+  }
+
+  /* ---- SETTINGS ---- */
+  .settings-layout{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:22px;
+  }
+  @media (max-width:800px){
+    .settings-layout{grid-template-columns:1fr;}
+  }
+  .profile-avatar-row{
+    display:flex;align-items:center;gap:14px;margin-bottom:12px;
+  }
+  .profile-avatar{
+    width:52px;height:52px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:1.2rem;flex:0 0 auto;
+  }
+  .profile-avatar-row input{
+    flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:9px;font-size:0.92rem;
+  }
+  #profileColorRow{margin-bottom:20px;}
+  #profileSaveBtn{
+    padding:11px 26px;
+    font-size:0.95rem;
+  }
+  .backup-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(30,60,80,0.35);
+    display:flex;align-items:center;justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  .modal{
+    background:#fff;border-radius:16px;padding:24px;width:min(480px,90vw);
+    box-shadow:0 20px 50px rgba(0,0,0,0.2);
+    display:flex;flex-direction:column;gap:12px;
+    max-height:85vh;overflow-y:auto;
+  }
+  .modal h2{margin:0;font-size:1.15rem;color:#1f5a73;}
+  .modal input[type=text], .modal textarea, .modal select{
+    width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:9px;font-size:0.92rem;font-family:inherit;
+  }
+  .cat-select-row{display:flex;gap:8px;align-items:center;}
+  .cat-select-row select{flex:1;}
+  .cat-select-row .btn{white-space:nowrap;}
+  .modal textarea{min-height:140px;resize:vertical;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
+  .modal-text{font-size:0.88rem;color:var(--muted);line-height:1.6;}
+  .hidden{display:none !important;}
+
+  .cat-list{
+    list-style:none;
+    margin:0 0 16px;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    max-height:280px;
+    overflow-y:auto;
+  }
+  .cat-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:9px 10px;
+    border-radius:10px;
+    background:#f4fbfe;
+  }
+  .cat-dot{
+    width:14px;height:14px;border-radius:50%;flex:0 0 auto;
+    box-shadow:0 0 0 2px rgba(0,0,0,0.05) inset;
+  }
+  .cat-name{flex:1;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cat-actions{display:flex;gap:4px;}
+  .icon-btn{
+    border:none;background:transparent;cursor:pointer;
+    color:var(--muted);font-size:0.85rem;padding:2px 4px;border-radius:6px;
+  }
+  .icon-btn:hover{background:rgba(0,0,0,0.06);color:var(--text);}
+  .new-cat{
+    display:flex;flex-direction:column;gap:8px;
+    border-top:1px solid var(--border);
+    padding-top:14px;
+  }
+  .new-cat input[type=text]{
+    padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;
+  }
+  .color-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .color-swatch{
+    width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;
+  }
+  .color-swatch.selected{border-color:#20647f;transform:scale(1.1);}
+
+  footer{
+    margin-top:40px;
+    padding:22px 20px 26px;
+    text-align:center;
+    color:var(--muted);
+    font-size:0.82rem;
+    background:rgba(255,255,255,0.5);
+  }
+  footer .footer-email{margin-bottom:8px;font-weight:600;color:#3a7690;}
+  footer .footer-links{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;}
+  footer .footer-links a{color:var(--muted);text-decoration:none;cursor:pointer;}
+  footer .footer-links a:hover{color:var(--accent);text-decoration:underline;}
+
+  .toast{
+    position:fixed;
+    bottom:28px;
+    left:50%;
+    transform:translateX(-50%) translateY(10px);
+    background:#20647f;
+    color:#fff;
+    padding:11px 22px;
+    border-radius:999px;
+    font-size:0.9rem;
+    font-weight:600;
+    box-shadow:0 10px 24px rgba(0,0,0,0.2);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s, transform .2s;
+    z-index:100;
+  }
+  .toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🗒️ 나만의 메모장</h1>
+    <p id="headerSubtitle">기록을 남기고 날짜별로 돌아볼 수 있어요</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabHomeBtn">홈</button>
+    <button class="tab-btn" id="tabListBtn">목록보기</button>
+    <button class="tab-btn" id="tabSettingsBtn">설정</button>
+  </div>
+
+  <!-- HOME VIEW -->
+  <div class="view active" id="homeView">
+    <div class="panel">
+      <div class="note-toolbar">
+        <input type="text" class="search-box" id="searchBox" placeholder="기록 검색...">
+        <button class="btn btn-primary" id="newNoteBtn">+ 새 기록</button>
+      </div>
+      <div class="notes-grid" id="homeNotesGrid"><div class="empty-state">기록이 없습니다. "+ 새 기록"으로 첫 기록을 작성해보세요 ✨</div></div>
+    </div>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div class="view" id="listView">
+    <div class="list-layout">
+      <div class="panel">
+        <div class="cal-header">
+          <button class="cal-nav-btn" id="prevMonthBtn">‹</button>
+          <span class="cal-title" id="calTitle"></span>
+          <button class="cal-nav-btn" id="nextMonthBtn">›</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-footer">
+          <button class="btn btn-outline btn-small" id="todayBtn">오늘</button>
+          <button class="btn btn-outline btn-small" id="manageCatBtn">카테고리 관리</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="selected-date-label" id="selectedDateLabel"></div>
+        <div class="notes-grid" id="dateNotesGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS VIEW -->
+  <div class="view" id="settingsView">
+    <div class="settings-layout">
+      <div class="panel">
+        <h2>프로필</h2>
+        <div class="profile-avatar-row">
+          <div class="profile-avatar" id="profileAvatarPreview"></div>
+          <input type="text" id="profileNameInput" placeholder="닉네임을 입력하세요" maxlength="20">
+        </div>
+        <div class="color-row" id="profileColorRow"></div>
+        <button class="btn btn-primary" id="profileSaveBtn">프로필 저장</button>
+      </div>
+
+      <div class="panel">
+        <h2>백업</h2>
+        <p class="modal-text">모든 기록과 카테고리, 프로필 정보를 파일로 내보내거나, 내보낸 파일로 복원할 수 있습니다.</p>
+        <div class="backup-actions">
+          <button class="btn btn-primary" id="exportBackupBtn">백업 파일 내보내기</button>
+          <button class="btn btn-outline" id="importBackupBtn">백업 파일 가져오기</button>
+          <input type="file" id="importBackupInput" accept="application/json" class="hidden">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer id="homeFooter">
+  <div class="footer-email">이메일: qorgh7787@gmail.com</div>
+  <div class="footer-links">
+    <a id="privacyLink">개인정보처리방침</a>
+    <a id="termsLink">이용약관</a>
+    <a id="securityLink">보안안내</a>
+  </div>
+</footer>
+
+<!-- NOTE MODAL -->
+<div class="modal-overlay hidden" id="noteModalOverlay">
+  <div class="modal">
+    <h2 id="noteModalTitle">새 기록</h2>
+    <div class="cat-select-row">
+      <select id="noteCategorySelect"></select>
+      <button type="button" class="btn btn-outline btn-small" id="noteManageCatBtn">카테고리 추가/관리</button>
+    </div>
+    <input type="date" id="noteDateInput">
+    <input type="text" id="noteTitleInput" placeholder="제목">
+    <textarea id="noteContentInput" placeholder="내용을 입력하세요..."></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="noteCancelBtn">취소</button>
+      <button class="btn btn-primary" id="noteSaveBtn">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- CATEGORY MANAGE MODAL -->
+<div class="modal-overlay hidden" id="catManageOverlay">
+  <div class="modal">
+    <h2>카테고리 관리</h2>
+    <ul class="cat-list" id="catList"></ul>
+    <div class="new-cat">
+      <input type="text" id="newCatName" placeholder="새 카테고리 이름">
+      <div class="color-row" id="colorRow"><div class="color-swatch selected" style="background: rgb(63, 169, 214);"></div><div class="color-swatch" style="background: rgb(91, 192, 190);"></div><div class="color-swatch" style="background: rgb(244, 162, 97);"></div><div class="color-swatch" style="background: rgb(231, 111, 81);"></div><div class="color-swatch" style="background: rgb(155, 140, 242);"></div><div class="color-swatch" style="background: rgb(239, 111, 155);"></div><div class="color-swatch" style="background: rgb(111, 191, 115);"></div><div class="color-swatch" style="background: rgb(242, 193, 78);"></div><div class="color-swatch" style="background: rgb(125, 133, 151);"></div><div class="color-swatch" style="background: rgb(76, 201, 240);"></div></div>
+      <button class="btn btn-primary" id="addCatBtn">카테고리 추가</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="catManageCloseBtn">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- CATEGORY EDIT MODAL -->
+<div class="modal-overlay hidden" id="catModalOverlay">
+  <div class="modal">
+    <h2>카테고리 수정</h2>
+    <input type="text" id="editCatName" placeholder="카테고리 이름">
+    <div class="color-row" id="editColorRow"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="catCancelBtn">취소</button>
+      <button class="btn btn-primary" id="catSaveBtn">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- INFO MODAL (privacy/terms/security placeholders) -->
+<div class="modal-overlay hidden" id="infoModalOverlay">
+  <div class="modal">
+    <h2 id="infoModalTitle"></h2>
+    <div class="modal-text" id="infoModalText"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="infoCloseBtn">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL (replaces window.confirm) -->
+<div class="modal-overlay hidden" id="confirmModalOverlay">
+  <div class="modal">
+    <h2 id="confirmModalTitle">확인</h2>
+    <div class="modal-text" id="confirmModalText"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="confirmModalCancelBtn">취소</button>
+      <button class="btn btn-primary" id="confirmModalOkBtn">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'myNotesApp.v2';
+const COLORS = ['#3fa9d6','#5bc0be','#f4a261','#e76f51','#9b8cf2','#ef6f9b','#6fbf73','#f2c14e','#7d8597','#4cc9f0'];
+const DOW = ['일','월','화','수','목','금','토'];
+
+let state = load();
+if(!state.profile){ state.profile = { name:'', color: COLORS[0] }; }
+
+/* ---------------- CUSTOM ALERT / CONFIRM (avoid native dialogs) ---------------- */
+function showAlert(message){
+  const overlay = document.getElementById('infoModalOverlay');
+  document.getElementById('infoModalTitle').textContent = '알림';
+  document.getElementById('infoModalText').textContent = message;
+  overlay.classList.remove('hidden');
+}
+let toastTimer = null;
+function showToast(message){
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast.classList.remove('show'), 1800);
+}
+function showConfirm(message, onConfirm){
+  const overlay = document.getElementById('confirmModalOverlay');
+  document.getElementById('confirmModalText').textContent = message;
+  overlay.classList.remove('hidden');
+  const okBtn = document.getElementById('confirmModalOkBtn');
+  const cancelBtn = document.getElementById('confirmModalCancelBtn');
+  const cleanup = ()=>{
+    overlay.classList.add('hidden');
+    okBtn.onclick = null;
+    cancelBtn.onclick = null;
+  };
+  okBtn.onclick = ()=>{ cleanup(); onConfirm(); };
+  cancelBtn.onclick = ()=>{ cleanup(); };
+}
+
+function load(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){
+    try{ return JSON.parse(raw); }catch(e){}
+  }
+  const defaultCats = [
+    {id:'general', name:'일반', color:COLORS[0]},
+    {id:'work', name:'업무', color:COLORS[2]},
+    {id:'idea', name:'아이디어', color:COLORS[4]},
+  ];
+  return { categories: defaultCats, notes: [], profile: { name:'', color: COLORS[0] } };
+}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function dateKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+
+let selectedNewColor = COLORS[0];
+let selectedEditColor = COLORS[0];
+let editingCatId = null;
+let editingNoteId = null;
+let calYear, calMonth;
+let selectedDateKey = dateKey(new Date());
+
+/* ---------------- TABS ---------------- */
+const tabHomeBtn = document.getElementById('tabHomeBtn');
+const tabListBtn = document.getElementById('tabListBtn');
+const tabSettingsBtn = document.getElementById('tabSettingsBtn');
+const homeView = document.getElementById('homeView');
+const listView = document.getElementById('listView');
+const settingsView = document.getElementById('settingsView');
+const homeFooter = document.getElementById('homeFooter');
+
+const TABS = [
+  { btn: tabHomeBtn, view: homeView, render: renderHome },
+  { btn: tabListBtn, view: listView, render: renderListView },
+  { btn: tabSettingsBtn, view: settingsView, render: renderSettings },
+];
+function activateTab(target){
+  TABS.forEach(t=>{
+    const active = t===target;
+    t.btn.classList.toggle('active', active);
+    t.view.classList.toggle('active', active);
+  });
+  homeFooter.classList.toggle('hidden', target.view!==homeView);
+  target.render();
+}
+tabHomeBtn.onclick = ()=>activateTab(TABS[0]);
+tabListBtn.onclick = ()=>activateTab(TABS[1]);
+tabSettingsBtn.onclick = ()=>activateTab(TABS[2]);
+
+/* ---------------- UTIL ---------------- */
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+function formatDateTime(ts){
+  const d = new Date(ts);
+  return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function catById(id){ return state.categories.find(c=>c.id===id); }
+
+/* ---------------- HOME (record feed) ---------------- */
+const searchBox = document.getElementById('searchBox');
+const homeNotesGrid = document.getElementById('homeNotesGrid');
+
+function noteCardHtml(note){
+  const cat = catById(note.categoryId) || {name:'미분류', color:'#9fb2c2'};
+  return `
+    <div class="note-card" style="border-left-color:${cat.color}" data-id="${note.id}">
+      <span class="cat-tag" style="background:${cat.color}">${escapeHtml(cat.name)}</span>
+      <h3>${escapeHtml(note.title || '(제목 없음)')}</h3>
+      <p>${escapeHtml(note.content)}</p>
+      <div class="note-meta">${note.dateKey} 수정: ${formatDateTime(note.updatedAt)}</div>
+      <div class="note-card-actions">
+        <button class="btn btn-outline btn-small edit-note">수정</button>
+        <button class="btn btn-outline btn-small del-note">삭제</button>
+      </div>
+    </div>`;
+}
+
+function handleNoteGridClick(e){
+  const card = e.target.closest('.note-card');
+  if(!card) return;
+  const id = card.dataset.id;
+  if(e.target.closest('.edit-note')){
+    openNoteModal(id);
+  } else if(e.target.closest('.del-note')){
+    showConfirm('삭제하시겠습니까?', ()=>{
+      state.notes = state.notes.filter(n=>n.id!==id);
+      save(); renderCurrentView();
+      showToast('삭제되었습니다');
+    });
+  }
+}
+
+function renderHome(){
+  const query = searchBox.value.trim().toLowerCase();
+  let list = state.notes.slice().sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(query){
+    list = list.filter(n=> n.title.toLowerCase().includes(query) || n.content.toLowerCase().includes(query));
+  }
+  if(list.length===0){
+    homeNotesGrid.innerHTML = '<div class="empty-state">기록이 없습니다. "+ 새 기록"으로 첫 기록을 작성해보세요 ✨</div>';
+    return;
+  }
+  homeNotesGrid.innerHTML = list.map(noteCardHtml).join('');
+}
+searchBox.addEventListener('input', renderHome);
+homeNotesGrid.addEventListener('click', handleNoteGridClick);
+
+/* ---------------- LIST VIEW (calendar) ---------------- */
+const calTitle = document.getElementById('calTitle');
+const calGrid = document.getElementById('calGrid');
+const selectedDateLabel = document.getElementById('selectedDateLabel');
+const dateNotesGrid = document.getElementById('dateNotesGrid');
+
+function initCalToToday(){
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+}
+initCalToToday();
+
+function renderCalendar(){
+  const first = new Date(calYear, calMonth, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const todayKey = dateKey(new Date());
+
+  calTitle.textContent = `${calYear}년 ${calMonth+1}월`;
+
+  const notesByDate = {};
+  state.notes.forEach(n=>{ notesByDate[n.dateKey] = (notesByDate[n.dateKey]||0)+1; });
+
+  let html = DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++){ html += '<div class="cal-day empty"></div>'; }
+  for(let day=1; day<=daysInMonth; day++){
+    const key = `${calYear}-${pad(calMonth+1)}-${pad(day)}`;
+    const classes = ['cal-day'];
+    if(key===todayKey) classes.push('today');
+    if(key===selectedDateKey) classes.push('selected');
+    const dot = notesByDate[key] ? '<span class="dot"></span>' : '';
+    html += `<div class="${classes.join(' ')}" data-key="${key}">${day}${dot}</div>`;
+  }
+  calGrid.innerHTML = html;
+  calGrid.querySelectorAll('.cal-day:not(.empty)').forEach(el=>{
+    el.onclick = ()=>{ selectedDateKey = el.dataset.key; renderListView(); };
+  });
+}
+
+function renderDateNotes(){
+  selectedDateLabel.textContent = `📅 ${selectedDateKey} 기록`;
+  const list = state.notes.filter(n=>n.dateKey===selectedDateKey).sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(list.length===0){
+    dateNotesGrid.innerHTML = '<div class="empty-state">선택한 날짜에 기록이 없습니다.</div>';
+    return;
+  }
+  dateNotesGrid.innerHTML = list.map(noteCardHtml).join('');
+}
+dateNotesGrid.addEventListener('click', handleNoteGridClick);
+
+function renderListView(){
+  renderCalendar();
+  renderDateNotes();
+}
+
+document.getElementById('prevMonthBtn').onclick = ()=>{
+  calMonth--; if(calMonth<0){ calMonth=11; calYear--; }
+  renderCalendar();
+};
+document.getElementById('nextMonthBtn').onclick = ()=>{
+  calMonth++; if(calMonth>11){ calMonth=0; calYear++; }
+  renderCalendar();
+};
+document.getElementById('todayBtn').onclick = ()=>{
+  initCalToToday();
+  selectedDateKey = dateKey(new Date());
+  renderListView();
+};
+
+function renderCurrentView(){
+  if(homeView.classList.contains('active')) renderHome();
+  else renderListView();
+}
+
+/* ---------------- CATEGORY MANAGE ---------------- */
+const catManageOverlay = document.getElementById('catManageOverlay');
+const catList = document.getElementById('catList');
+const colorRow = document.getElementById('colorRow');
+const editColorRow = document.getElementById('editColorRow');
+
+function renderColorRow(container, selectedGetter, onPick){
+  container.innerHTML = '';
+  COLORS.forEach(c=>{
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (selectedGetter()===c ? ' selected':'');
+    sw.style.background = c;
+    sw.onclick = ()=>{ onPick(c); renderColorRow(container, selectedGetter, onPick); };
+    container.appendChild(sw);
+  });
+}
+
+function renderCatManageList(){
+  catList.innerHTML = '';
+  state.categories.forEach(cat=>{
+    const count = state.notes.filter(n=>n.categoryId===cat.id).length;
+    const li = document.createElement('li');
+    li.className = 'cat-item';
+    li.innerHTML = `
+      <span class="cat-dot" style="background:${cat.color}"></span>
+      <span class="cat-name">${escapeHtml(cat.name)} (${count})</span>
+      <span class="cat-actions">
+        <button class="icon-btn edit-cat" title="수정">✎</button>
+        <button class="icon-btn del-cat" title="삭제">✕</button>
+      </span>`;
+    li.querySelector('.edit-cat').onclick = ()=>openEditCategory(cat.id);
+    li.querySelector('.del-cat').onclick = ()=>deleteCategory(cat.id);
+    catList.appendChild(li);
+  });
+}
+
+function deleteCategory(id){
+  const cat = catById(id);
+  if(!cat) return;
+  const count = state.notes.filter(n=>n.categoryId===id).length;
+  const msg = count>0
+    ? `"${cat.name}" 카테고리를 삭제하면 포함된 기록 ${count}개도 함께 삭제됩니다. 삭제하시겠습니까?`
+    : `"${cat.name}" 카테고리를 삭제하시겠습니까?`;
+  showConfirm(msg, ()=>{
+    state.notes = state.notes.filter(n=>n.categoryId!==id);
+    state.categories = state.categories.filter(c=>c.id!==id);
+    save(); renderCatManageList(); renderCurrentView(); refreshNoteCategorySelectIfOpen();
+    showToast('삭제되었습니다');
+  });
+}
+
+function openEditCategory(id){
+  editingCatId = id;
+  const cat = catById(id);
+  document.getElementById('editCatName').value = cat.name;
+  selectedEditColor = cat.color;
+  renderColorRow(editColorRow, ()=>selectedEditColor, c=>selectedEditColor=c);
+  document.getElementById('catModalOverlay').classList.remove('hidden');
+}
+document.getElementById('catCancelBtn').onclick = ()=>{
+  document.getElementById('catModalOverlay').classList.add('hidden');
+};
+document.getElementById('catSaveBtn').onclick = ()=>{
+  const name = document.getElementById('editCatName').value.trim();
+  if(!name){ showAlert('카테고리 이름을 입력해주세요.'); return; }
+  const cat = catById(editingCatId);
+  cat.name = name;
+  cat.color = selectedEditColor;
+  save();
+  document.getElementById('catModalOverlay').classList.add('hidden');
+  renderCatManageList(); renderCurrentView(); refreshNoteCategorySelectIfOpen();
+  showToast('수정되었습니다');
+};
+document.getElementById('addCatBtn').onclick = ()=>{
+  const input = document.getElementById('newCatName');
+  const name = input.value.trim();
+  if(!name){ showAlert('카테고리 이름을 입력해주세요.'); return; }
+  state.categories.push({ id: uid(), name, color: selectedNewColor });
+  input.value = '';
+  save();
+  renderCatManageList(); renderCurrentView(); refreshNoteCategorySelectIfOpen();
+  showToast('저장되었습니다');
+};
+function refreshNoteCategorySelectIfOpen(){
+  if(noteModalOverlay.classList.contains('hidden')) return;
+  const sel = document.getElementById('noteCategorySelect');
+  const prev = sel.value;
+  populateCategorySelect();
+  if(catById(prev)) sel.value = prev;
+  else if(state.categories.length) sel.value = state.categories[0].id;
+}
+document.getElementById('manageCatBtn').onclick = ()=>{
+  renderCatManageList();
+  catManageOverlay.classList.remove('hidden');
+};
+document.getElementById('noteManageCatBtn').onclick = ()=>{
+  renderCatManageList();
+  catManageOverlay.classList.remove('hidden');
+};
+document.getElementById('catManageCloseBtn').onclick = ()=>{
+  catManageOverlay.classList.add('hidden');
+  refreshNoteCategorySelectIfOpen();
+};
+renderColorRow(colorRow, ()=>selectedNewColor, c=>selectedNewColor=c);
+
+/* ---------------- NOTE MODAL ---------------- */
+const noteModalOverlay = document.getElementById('noteModalOverlay');
+const noteDateInput = document.getElementById('noteDateInput');
+noteDateInput.type = 'date';
+
+function populateCategorySelect(){
+  const sel = document.getElementById('noteCategorySelect');
+  sel.innerHTML = '';
+  state.categories.forEach(cat=>{
+    const opt = document.createElement('option');
+    opt.value = cat.id;
+    opt.textContent = cat.name;
+    sel.appendChild(opt);
+  });
+}
+
+function openNoteModal(noteId){
+  if(state.categories.length===0){
+    showAlert('먼저 카테고리를 추가해주세요.');
+    return;
+  }
+  populateCategorySelect();
+  editingNoteId = noteId || null;
+  const titleInput = document.getElementById('noteTitleInput');
+  const contentInput = document.getElementById('noteContentInput');
+  const catSelect = document.getElementById('noteCategorySelect');
+
+  if(noteId){
+    const note = state.notes.find(n=>n.id===noteId);
+    document.getElementById('noteModalTitle').textContent = '기록 수정';
+    titleInput.value = note.title;
+    contentInput.value = note.content;
+    catSelect.value = note.categoryId;
+    noteDateInput.value = note.dateKey;
+  } else {
+    document.getElementById('noteModalTitle').textContent = '새 기록';
+    titleInput.value = '';
+    contentInput.value = '';
+    catSelect.value = state.categories[0].id;
+    noteDateInput.value = listView.classList.contains('active') ? selectedDateKey : dateKey(new Date());
+  }
+  noteModalOverlay.classList.remove('hidden');
+  titleInput.focus();
+}
+
+document.getElementById('newNoteBtn').onclick = ()=>openNoteModal(null);
+document.getElementById('noteCancelBtn').onclick = ()=>{
+  noteModalOverlay.classList.add('hidden');
+};
+document.getElementById('noteSaveBtn').onclick = ()=>{
+  const title = document.getElementById('noteTitleInput').value.trim();
+  const content = document.getElementById('noteContentInput').value.trim();
+  const categoryId = document.getElementById('noteCategorySelect').value;
+  const dKey = noteDateInput.value || dateKey(new Date());
+  if(!title && !content){ showAlert('제목이나 내용을 입력해주세요.'); return; }
+  const now = Date.now();
+  const wasEditing = !!editingNoteId;
+  if(editingNoteId){
+    const note = state.notes.find(n=>n.id===editingNoteId);
+    note.title = title; note.content = content; note.categoryId = categoryId; note.updatedAt = now; note.dateKey = dKey;
+  } else {
+    state.notes.push({ id: uid(), title, content, categoryId, dateKey: dKey, createdAt: now, updatedAt: now });
+  }
+  save();
+  noteModalOverlay.classList.add('hidden');
+
+  const [yy, mm, dd] = dKey.split('-').map(Number);
+  calYear = yy; calMonth = mm - 1;
+  selectedDateKey = dKey;
+  tabListBtn.click();
+  showToast(wasEditing ? '수정되었습니다' : '저장되었습니다');
+};
+
+/* ---------------- FOOTER INFO MODALS ---------------- */
+const infoModalOverlay = document.getElementById('infoModalOverlay');
+const infoModalTitle = document.getElementById('infoModalTitle');
+const infoModalText = document.getElementById('infoModalText');
+const INFO_CONTENT = {
+  privacy: {
+    title: '개인정보처리방침',
+    text: '이 앱은 별도의 서버로 데이터를 전송하지 않으며, 작성한 모든 기록과 카테고리 정보는 사용하시는 브라우저의 로컬 저장소(localStorage)에만 저장됩니다. 브라우저 데이터를 삭제하거나 다른 기기·브라우저로 이동하면 기록이 유지되지 않을 수 있습니다.'
+  },
+  terms: {
+    title: '이용약관',
+    text: '본 메모장은 개인 기록용 도구로 무료로 제공됩니다. 데이터 손실, 저장 공간 초과 등으로 인해 발생하는 문제에 대해 개발자는 책임을 지지 않으며, 중요한 기록은 별도로 백업하시길 권장합니다.'
+  },
+  security: {
+    title: '보안안내',
+    text: '모든 데이터는 사용자의 브라우저 안에만 저장되고 외부로 전송되지 않습니다. 다만 공용 컴퓨터에서 사용할 경우 다른 사용자가 같은 브라우저로 기록을 볼 수 있으니, 사용 후 브라우저 데이터를 정리하는 것을 권장합니다.'
+  }
+};
+function openInfoModal(key){
+  const info = INFO_CONTENT[key];
+  infoModalTitle.textContent = info.title;
+  infoModalText.textContent = info.text;
+  infoModalOverlay.classList.remove('hidden');
+}
+document.getElementById('privacyLink').onclick = ()=>openInfoModal('privacy');
+document.getElementById('termsLink').onclick = ()=>openInfoModal('terms');
+document.getElementById('securityLink').onclick = ()=>openInfoModal('security');
+document.getElementById('infoCloseBtn').onclick = ()=>infoModalOverlay.classList.add('hidden');
+
+/* ---------------- SETTINGS: PROFILE ---------------- */
+const headerSubtitle = document.getElementById('headerSubtitle');
+const profileAvatarPreview = document.getElementById('profileAvatarPreview');
+const profileNameInput = document.getElementById('profileNameInput');
+const profileColorRow = document.getElementById('profileColorRow');
+let selectedProfileColor = state.profile.color;
+
+function updateHeaderGreeting(){
+  headerSubtitle.textContent = state.profile.name
+    ? `${state.profile.name}님, 기록을 남기고 날짜별로 돌아볼 수 있어요`
+    : '기록을 남기고 날짜별로 돌아볼 수 있어요';
+}
+function updateAvatarPreview(){
+  profileAvatarPreview.style.background = selectedProfileColor;
+  const initial = profileNameInput.value.trim().charAt(0) || '?';
+  profileAvatarPreview.textContent = initial;
+}
+function renderSettings(){
+  profileNameInput.value = state.profile.name;
+  selectedProfileColor = state.profile.color;
+  renderColorRow(profileColorRow, ()=>selectedProfileColor, c=>{ selectedProfileColor=c; updateAvatarPreview(); });
+  updateAvatarPreview();
+}
+profileNameInput.addEventListener('input', updateAvatarPreview);
+document.getElementById('profileSaveBtn').onclick = ()=>{
+  state.profile.name = profileNameInput.value.trim();
+  state.profile.color = selectedProfileColor;
+  save();
+  updateHeaderGreeting();
+  showToast('저장되었습니다');
+};
+
+/* ---------------- SETTINGS: BACKUP ---------------- */
+document.getElementById('exportBackupBtn').onclick = ()=>{
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const now = new Date();
+  a.href = url;
+  a.download = `메모장_백업_${dateKey(now)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('백업 파일이 생성되었습니다');
+};
+
+const importBackupInput = document.getElementById('importBackupInput');
+document.getElementById('importBackupBtn').onclick = ()=>importBackupInput.click();
+importBackupInput.addEventListener('change', ()=>{
+  const file = importBackupInput.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    let parsed;
+    try{ parsed = JSON.parse(reader.result); }catch(e){ parsed = null; }
+    if(!parsed || !Array.isArray(parsed.categories) || !Array.isArray(parsed.notes)){
+      showAlert('올바른 백업 파일이 아닙니다.');
+      importBackupInput.value = '';
+      return;
+    }
+    showConfirm('현재 데이터를 백업 파일 내용으로 덮어씁니다. 계속할까요?', ()=>{
+      if(!parsed.profile) parsed.profile = { name:'', color: COLORS[0] };
+      state = parsed;
+      save();
+      renderSettings();
+      updateHeaderGreeting();
+      activateTab(TABS[0]);
+      showToast('가져오기가 완료되었습니다');
+      importBackupInput.value = '';
+    });
+  };
+  reader.readAsText(file);
+});
+
+/* ---------------- MIGRATION (v1 notes without dateKey) ---------------- */
+state.notes.forEach(n=>{
+  if(!n.dateKey){ n.dateKey = dateKey(new Date(n.createdAt || Date.now())); }
+});
+
+/* ---------------- INIT ---------------- */
+updateHeaderGreeting();
+renderHome();
+</script>
+<div class="toast" id="toast"></div>
+
+
+</body></html>

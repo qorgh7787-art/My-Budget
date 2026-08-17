@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /userDirectory/{userId} {
+      allow get: if request.auth != null;
+      allow list: if request.auth != null &&
+        get(/databases/$(database)/documents/userDirectory/$(request.auth.uid)).data.isAdmin == true;
+      allow create: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.uid == userId &&
+        request.resource.data.approved == (request.auth.token.email == 'qorgh7787@gmail.com') &&
+        request.resource.data.isAdmin == (request.auth.token.email == 'qorgh7787@gmail.com');
+      allow update: if request.auth != null && (
+        get(/databases/$(database)/documents/userDirectory/$(request.auth.uid)).data.isAdmin == true
+        || (request.auth.uid == userId
+            && request.resource.data.approved == resource.data.approved
+            && request.resource.data.isAdmin == resource.data.isAdmin
+            && request.resource.data.suspended == resource.data.suspended)
+      );
+      allow delete: if request.auth != null &&
+        get(/databases/$(database)/documents/userDirectory/$(request.auth.uid)).data.isAdmin == true;
+    }
+    match /system/{docId} {
+      allow get: if request.auth != null;
+      allow write: if request.auth != null &&
+        get(/databases/$(database)/documents/userDirectory/$(request.auth.uid)).data.isAdmin == true;
+    }
+    match /inquiries/{inquiryId} {
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if request.auth != null && (
+        resource.data.uid == request.auth.uid
+        || get(/databases/$(database)/documents/userDirectory/$(request.auth.uid)).data.isAdmin == true
+      );
+    }
+  }
+}

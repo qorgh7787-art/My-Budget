@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>나만의 가계부</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light">
 <meta name="theme-color" content="#1f7fb3">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -26,12 +25,8 @@
     }
   });
 </script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
-    color-scheme: light;
     --bg-top: #d8f0fb;
     --bg-bottom: #eaf7fd;
     --card: #ffffff;
@@ -49,17 +44,6 @@
     --shadow: 0 10px 30px -12px rgba(31,127,179,0.25);
   }
   *{box-sizing:border-box;}
-  .hidden{ display:none !important; }
-  /* Short UI labels stay on one line; long-form descriptive text keeps wrapping */
-  h1, h2, label, button, .nav-label, .tile .label, .tile .value,
-  .legend-row .name, .legend-row .amt, .cat-manage-item .name,
-  .cal-filter-label, .backup-status-line, .login-title, .auth-switch,
-  th, td { white-space: nowrap; }
-  .backup-desc, .login-subtitle, .list-hint, .empty-msg,
-  .auth-error, .footer-panel p, .footer-panel li {
-    white-space: normal;
-  }
-  td { overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
   body{
     margin:0;
     min-height:100vh;
@@ -152,11 +136,6 @@
   }
   .type-toggle button.active[data-type="income"]{ background: var(--income); color:#fff; box-shadow: 0 4px 10px -4px rgba(36,180,126,0.6);}
   .type-toggle button.active[data-type="expense"]{ background: var(--expense); color:#fff; box-shadow: 0 4px 10px -4px rgba(255,122,104,0.6);}
-  .pm-toggle button.active{ background: var(--accent-deep); color:#fff; box-shadow: 0 4px 10px -4px rgba(31,127,179,0.6); }
-  .pm-tag{
-    display:inline-block; font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:999px;
-    background: var(--card-soft); color: var(--text-soft); margin-left:6px; vertical-align:middle;
-  }
 
   .field{ margin-bottom: 12px; }
   .field label{ display:block; font-size:12px; color:var(--text-soft); margin-bottom:6px; font-weight:500;}
@@ -341,12 +320,6 @@
 
   body{ padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 
-  #page-home.active-page{
-    display:flex; flex-direction:column;
-    min-height: calc(100vh - 88px - env(safe-area-inset-bottom, 0px));
-  }
-  #page-home .footer-bottom{ margin-top:auto; padding-top:24px; }
-
   .bottom-nav{
     position:fixed; left:0; right:0; bottom:0; z-index:1000;
     display:flex; background: rgba(255,255,255,0.92); backdrop-filter: blur(10px);
@@ -399,23 +372,6 @@
 
   /* Backup / restore */
   .backup-desc{ font-size:12.5px; color: var(--text-soft); margin:0 0 14px; line-height:1.5; }
-
-  /* Category management */
-  .cat-manage-list{ display:flex; flex-direction:column; gap:8px; }
-  .cat-manage-item{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
-    padding:11px 12px; border-radius:10px; background: var(--card-soft);
-  }
-  .cat-manage-item .name{ font-size:14px; font-weight:600; color: var(--text); }
-  .cat-manage-item .pinned-tag{
-    font-size:11px; color: var(--text-soft); font-weight:600; background: var(--accent-pale);
-    padding:3px 8px; border-radius:8px;
-  }
-  .cat-manage-item .del-cat-btn{
-    border:none; background:none; color:#b9cbd4; font-size:16px; cursor:pointer; padding:2px 6px; flex-shrink:0;
-  }
-  .cat-manage-item .del-cat-btn:hover{ color: var(--expense); }
-  .cat-manage-empty{ text-align:center; color: var(--text-soft); font-size:12.5px; padding:16px 0; }
   .backup-actions{ display:flex; flex-direction:column; gap:8px; }
   .backup-btn{
     width:100%; padding:12px; border:none; border-radius:12px; font-size:14px; font-weight:700;
@@ -425,133 +381,10 @@
   .backup-btn.secondary{
     background: var(--card-soft); color: var(--accent-deep); border:1.5px solid var(--accent-pale);
   }
-  .backup-btn.danger{
-    background: var(--expense-bg); color: var(--expense); border:1.5px solid var(--expense-bg);
-  }
-  .backup-btn.danger-solid{
-    background: var(--expense); color:#fff;
-  }
-
-  .backup-status-line{
-    font-size:12px; color: var(--text-soft); margin:-4px 0 14px; display:flex; align-items:center; gap:6px;
-  }
-  .backup-status-line.stale{ color: var(--expense); font-weight:700; }
-
-  /* Amount row + calculator */
-  .amount-row{ display:flex; gap:8px; }
-  .amount-row input{ flex:1; }
-  .calc-open-btn{
-    width:44px; flex-shrink:0; border-radius:10px; border:1.5px solid var(--accent-pale);
-    background: var(--accent-pale); color: var(--accent-deep); font-size:18px; cursor:pointer;
-  }
-  .calc-open-btn:hover{ background: var(--accent); color:#fff; }
-
-  .calc-overlay{
-    position:fixed; inset:0; background: rgba(15,35,45,0.45); z-index:2000;
-    display:none; align-items:flex-end; justify-content:center;
-  }
-  .calc-overlay.show{ display:flex; }
-  .calc-modal{
-    background:#fff; width:100%; max-width:420px; border-radius:20px 20px 0 0;
-    padding:18px 16px calc(18px + env(safe-area-inset-bottom));
-    box-shadow: 0 -10px 30px -10px rgba(0,0,0,0.3);
-  }
-  .calc-header{
-    display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;
-    font-size:14px; font-weight:800; color: var(--text);
-  }
-  .calc-header button{ border:none; background:none; font-size:18px; color: var(--text-soft); cursor:pointer; padding:4px; }
-  .calc-display{
-    text-align:right; font-size:30px; font-weight:800; color: var(--text); background: var(--card-soft);
-    border-radius:12px; padding:16px 14px; margin-bottom:12px; overflow-x:auto; white-space:nowrap;
-  }
-  .calc-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:14px; }
-  .calc-grid button{
-    padding:16px 0; border:none; border-radius:12px; font-size:17px; font-weight:700;
-    background: var(--card-soft); color: var(--text); cursor:pointer; font-family:inherit;
-  }
-  .calc-grid button:active{ transform: scale(0.95); }
-  .calc-op-btn{ background: var(--accent-pale); color: var(--accent-deep); }
-  .calc-equals{ background: var(--accent-deep); color:#fff; }
-  .calc-zero-span{ grid-column: span 2; }
-  .calc-apply-btn{
-    width:100%; padding:14px; border:none; border-radius:12px; background: var(--income);
-    color:#fff; font-size:15px; font-weight:800; cursor:pointer;
-  }
-  .calc-apply-btn:active{ transform: scale(0.98); }
-
-  /* Login / signup screen (Firebase auth) */
-  .login-screen{
-    position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center;
-    background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 45%, #f6fcff 100%); padding:20px;
-  }
-  .login-card{
-    background: var(--card); border-radius:18px; box-shadow: var(--shadow); padding:40px 32px;
-    width:min(400px,100%); text-align:center;
-  }
-  .login-icon{
-    width:52px; height:52px; border-radius:14px; background: var(--accent-pale); color: var(--accent-deep);
-    display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:1.4rem;
-  }
-  .login-title{ margin:0 0 8px; font-size:1.3rem; color: var(--text); }
-  .login-subtitle{ margin:0 0 22px; color: var(--text-soft); font-size:0.85rem; }
-  .login-card .field{ text-align:left; margin-bottom:12px; }
-  .login-card label{ display:block; font-size:0.78rem; color: var(--text-soft); margin-bottom:5px; }
-  .login-card input{
-    width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--line);
-    font-size:0.95rem; background:#fff; color: var(--text);
-  }
-  .login-card input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
-  .pw-row{ display:flex; gap:8px; }
-  .pw-row input{ flex:1; }
-  .pw-toggle-btn{
-    flex-shrink:0; padding:0 14px; border-radius:10px; border:1px solid var(--line);
-    background:#fff; color: var(--text-soft); font-size:0.82rem; font-weight:600; cursor:pointer;
-  }
-  .pw-toggle-btn:active{ background: var(--card-soft); }
-  .auth-error{ color:#d6336c; font-size:0.8rem; min-height:1.1em; margin:0 0 10px; text-align:left; }
-  .login-submit-btn{
-    width:100%; padding:13px; border:none; border-radius:12px; background: var(--accent-deep);
-    color:#fff; font-size:0.95rem; font-weight:700; cursor:pointer; margin-top:4px;
-  }
-  .login-submit-btn:active{ transform: scale(0.98); }
-  .auth-switch{ margin:18px 0 0; font-size:0.82rem; color: var(--text-soft); }
-  .auth-switch a{ color: var(--accent-deep); font-weight:700; text-decoration:none; }
-  .auth-switch a:hover{ text-decoration:underline; }
 </style>
 </head>
 <body>
-
-<div class="login-screen hidden" id="loginScreen">
-  <div class="login-card">
-    <div class="login-icon">🔐</div>
-    <h1 class="login-title" id="authScreenTitle">로그인</h1>
-    <p class="login-subtitle" id="authScreenSubtitle">이메일과 비밀번호로 로그인하세요.</p>
-    <div class="field hidden" id="authNameRow">
-      <label>이름 (선택)</label>
-      <input type="text" id="authNameInput" placeholder="이름">
-    </div>
-    <div class="field">
-      <label>이메일</label>
-      <input type="email" id="authEmailInput" placeholder="you@example.com" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
-    </div>
-    <div class="field">
-      <label>비밀번호</label>
-      <div class="pw-row">
-        <input type="password" id="authPasswordInput" placeholder="6자 이상" autocomplete="current-password">
-        <button type="button" id="authPwToggleBtn" class="pw-toggle-btn">보기</button>
-      </div>
-    </div>
-    <p class="auth-error" id="authErrorText"></p>
-    <button type="button" class="login-submit-btn" id="authSubmitBtn">로그인</button>
-    <p class="auth-switch">
-      <span id="authSwitchText">계정이 없으신가요?</span>
-      <a href="#" id="authSwitchLink">회원가입</a>
-    </p>
-  </div>
-</div>
-
-<div class="wrap hidden" id="appRoot">
+<div class="wrap">
 
   <!-- HOME PAGE -->
   <div class="page active-page" id="page-home">
@@ -574,43 +407,18 @@
     <div class="ios-hint" id="iosHint">
       📱 아이폰에서 설치하기: 하단 공유 버튼<span class="ios-share-icon">⬆️</span>을 누른 뒤 <b>"홈 화면에 추가"</b>를 선택하세요.
     </div>
-
-    <div class="footer-bottom">
-      <div>© 2026 나만의 가계부. All rights reserved.</div>
-      <a href="mailto:qorgh7787@gmail.com">qorgh7787@gmail.com</a>
-    </div>
   </div>
 
   <!-- SETTINGS PAGE (backup / privacy / terms / security) -->
   <div class="page" id="page-settings">
-    <!-- Account (Firebase auth) -->
-    <div class="card hidden" id="accountCard">
-      <h2><span class="dot"></span>계정</h2>
-      <p class="backup-desc">클라우드에 로그인되어 있으면, 쿠키·사이트 데이터를 지우거나 기기를 바꿔도 로그인만 다시 하면 기록을 그대로 불러와요.</p>
-      <div class="backup-status-line" id="accountEmailLine"></div>
-      <div class="backup-actions">
-        <button type="button" class="backup-btn secondary" id="logoutBtn">로그아웃</button>
-      </div>
-    </div>
-
     <!-- Backup / restore -->
     <div class="card">
       <h2><span class="dot"></span>데이터 백업</h2>
-      <div class="backup-status-line" id="backupStatusLine"></div>
+      <p class="backup-desc">기록은 이 기기에만 저장돼요. 기기를 바꾸거나 만약을 대비해 파일로 백업해두세요.</p>
       <div class="backup-actions">
         <button type="button" class="backup-btn" id="exportBtn">⬇️ 백업 파일 내보내기</button>
         <button type="button" class="backup-btn secondary" id="importBtn">⬆️ 백업 파일 불러오기</button>
         <input type="file" id="importFileInput" accept="application/json,.json" style="display:none;">
-      </div>
-    </div>
-
-    <!-- Danger zone: reset / delete account -->
-    <div class="card">
-      <h2><span class="dot"></span>위험 구역</h2>
-      <p class="backup-desc">아래 작업은 되돌릴 수 없어요. 미리 백업 파일을 내보내 두시는 걸 권장해요.</p>
-      <div class="backup-actions">
-        <button type="button" class="backup-btn danger" id="resetAllBtn">🗑️ 전체 초기화</button>
-        <button type="button" class="backup-btn danger" id="withdrawBtn">회원 탈퇴</button>
       </div>
     </div>
 
@@ -650,6 +458,11 @@
           </ul>
         </div>
       </div>
+
+      <div class="footer-bottom">
+        <div>© 2026 나만의 가계부. All rights reserved.</div>
+        <a href="mailto:qorgh7787@gmail.com">qorgh7787@gmail.com</a>
+      </div>
     </div>
   </div>
 
@@ -659,22 +472,22 @@
     <div class="card">
       <h2><span class="dot"></span>달력으로 보기</h2>
       <div class="cal-header">
-        <button type="button" class="cal-nav" data-cal-action="prev">‹</button>
-        <div class="cal-month-label"></div>
-        <button type="button" class="cal-nav" data-cal-action="next">›</button>
+        <button type="button" class="cal-nav" id="calPrev">‹</button>
+        <div class="cal-month-label" id="calMonthLabel"></div>
+        <button type="button" class="cal-nav" id="calNext">›</button>
       </div>
       <div class="cal-weekdays">
         <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
       </div>
-      <div class="cal-grid"></div>
-      <div class="cal-filter-row" style="display:none;">
-        <span class="cal-filter-label"></span>
-        <button type="button" data-cal-action="clear">전체보기</button>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-filter-row" id="calFilterRow" style="display:none;">
+        <span id="calFilterLabel"></span>
+        <button type="button" id="calClearFilter">전체보기</button>
       </div>
     </div>
 
     <!-- Entry form -->
-    <div class="card" id="entryFormCard">
+    <div class="card">
       <h2><span class="dot"></span>기록 추가하기</h2>
       <div class="edit-banner" id="editBanner">
         <span>기록을 수정하는 중이에요</span>
@@ -697,20 +510,9 @@
         </div>
       </div>
 
-      <div class="field hidden" id="paymentMethodField">
-        <label>결제 수단</label>
-        <div class="type-toggle pm-toggle" id="paymentMethodToggle">
-          <button type="button" data-pm="cash" class="active">현금</button>
-          <button type="button" data-pm="card">카드</button>
-        </div>
-      </div>
-
       <div class="field">
         <label>금액</label>
-        <div class="amount-row">
-          <input type="text" id="amountInput" inputmode="numeric" placeholder="0">
-          <button type="button" class="calc-open-btn" id="calcOpenBtn" title="계산기">🧮</button>
-        </div>
+        <input type="text" id="amountInput" inputmode="numeric" placeholder="0">
       </div>
 
       <div class="field">
@@ -725,16 +527,6 @@
 
       <button class="save-btn income-mode" id="saveBtn">저장하기</button>
     </div>
-
-    <!-- Category management -->
-    <div class="card">
-      <h2><span class="dot"></span>카테고리 관리</h2>
-      <div class="type-toggle" id="catManageTypeToggle">
-        <button data-type="income" class="active">수입</button>
-        <button data-type="expense">지출</button>
-      </div>
-      <div class="cat-manage-list" id="catManageList"></div>
-    </div>
   </div>
 
   <!-- GRAPH PAGE (sub-tabs: 기록 보기 / 그래프 보기 / 카테고리별 보기) -->
@@ -746,23 +538,6 @@
     </div>
 
     <div class="sub-page active-sub" id="subpage-records">
-      <div class="card">
-        <h2><span class="dot"></span>달력으로 보기</h2>
-        <div class="cal-header">
-          <button type="button" class="cal-nav" data-cal-action="prev">‹</button>
-          <div class="cal-month-label"></div>
-          <button type="button" class="cal-nav" data-cal-action="next">›</button>
-        </div>
-        <div class="cal-weekdays">
-          <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
-        </div>
-        <div class="cal-grid"></div>
-        <div class="cal-filter-row" style="display:none;">
-          <span class="cal-filter-label"></span>
-          <button type="button" data-cal-action="clear">전체보기</button>
-        </div>
-      </div>
-
       <div class="card">
         <h2><span class="dot"></span>기록 보기</h2>
         <div class="list-toolbar">
@@ -809,7 +584,7 @@
 
 </div>
 
-<div class="bottom-nav hidden" id="bottomNav">
+<div class="bottom-nav" id="bottomNav">
   <button type="button" class="nav-btn active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">홈화면</span></button>
   <button type="button" class="nav-btn" data-page="record"><span class="nav-icon">🧾</span><span class="nav-label">기록</span></button>
   <button type="button" class="nav-btn" data-page="graph"><span class="nav-icon">📊</span><span class="nav-label">그래프</span></button>
@@ -818,75 +593,10 @@
 
 <div class="toast" id="toast"></div>
 
-<div class="calc-overlay" id="calcOverlay">
-  <div class="calc-modal">
-    <div class="calc-header">
-      <span>계산기</span>
-      <button type="button" id="calcCloseBtn">✕</button>
-    </div>
-    <div class="calc-display" id="calcDisplay">0</div>
-    <div class="calc-grid">
-      <button type="button" data-calc="clear">C</button>
-      <button type="button" data-calc="back">⌫</button>
-      <button type="button" data-calc="percent">%</button>
-      <button type="button" class="calc-op-btn" data-calc="op" data-op="÷">÷</button>
-
-      <button type="button" data-calc="digit" data-val="7">7</button>
-      <button type="button" data-calc="digit" data-val="8">8</button>
-      <button type="button" data-calc="digit" data-val="9">9</button>
-      <button type="button" class="calc-op-btn" data-calc="op" data-op="×">×</button>
-
-      <button type="button" data-calc="digit" data-val="4">4</button>
-      <button type="button" data-calc="digit" data-val="5">5</button>
-      <button type="button" data-calc="digit" data-val="6">6</button>
-      <button type="button" class="calc-op-btn" data-calc="op" data-op="−">−</button>
-
-      <button type="button" data-calc="digit" data-val="1">1</button>
-      <button type="button" data-calc="digit" data-val="2">2</button>
-      <button type="button" data-calc="digit" data-val="3">3</button>
-      <button type="button" class="calc-op-btn" data-calc="op" data-op="+">+</button>
-
-      <button type="button" class="calc-zero-span" data-calc="digit" data-val="0">0</button>
-      <button type="button" data-calc="dot">.</button>
-      <button type="button" class="calc-equals" data-calc="equals">=</button>
-    </div>
-    <button type="button" class="calc-apply-btn" id="calcApplyBtn">이 값 사용하기</button>
-  </div>
-</div>
-
 <script>
 (function(){
   const STORAGE_KEY = 'yeongseon_ledger_entries';
   const CAT_KEY = 'yeongseon_ledger_categories';
-  const LAST_EXPORT_KEY = 'yeongseon_ledger_last_export_at';
-  const LIST_FILTER_KEY = 'yeongseon_ledger_list_filter';
-  const LIST_FILTER_ALL = '__ALL__';
-
-  function saveListFilter(){
-    try{ localStorage.setItem(LIST_FILTER_KEY, state.selectedDate || LIST_FILTER_ALL); }catch(e){ /* not critical */ }
-  }
-
-  /* ---------------- FIREBASE (로그인 + 클라우드 저장) ----------------
-     아래 값을 Firebase 콘솔 > 프로젝트 설정 > 내 앱 에서 나온 firebaseConfig로 교체하면
-     이메일/비밀번호 로그인 + 계정별 클라우드 저장이 자동으로 켜집니다.
-     교체하기 전까지는 로그인 화면 없이 브라우저 로컬 저장(localStorage) 방식으로 동작합니다. */
-  const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyByRDnmEHn9EqakxYHqnrTR913pz01gclY",
-    authDomain: "rkrpqn-b7f69.firebaseapp.com",
-    projectId: "rkrpqn-b7f69",
-    storageBucket: "rkrpqn-b7f69.firebasestorage.app",
-    messagingSenderId: "110910023151",
-    appId: "1:110910023151:web:6601c48a8a54136397c21a"
-  };
-  const firebaseEnabled = FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY" && typeof firebase !== 'undefined';
-  let auth = null, db = null, currentUser = null;
-  if(firebaseEnabled){
-    firebase.initializeApp(FIREBASE_CONFIG);
-    auth = firebase.auth();
-    db = firebase.firestore();
-    // keep the user signed in across browser restarts so they only log in once per device
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err=>console.error('로그인 유지 설정 실패', err));
-  }
 
   const defaultCats = {
     income: ['용돈','월급','부수입','기타수입'],
@@ -897,15 +607,13 @@
     entries: [],
     categories: JSON.parse(JSON.stringify(defaultCats)),
     currentType: 'income',
-    currentPaymentMethod: 'cash',
     currentPeriod: 'day',
     selectedIds: new Set(),
     selectedDate: null,
     calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     editingId: null,
     catViewType: 'income',
-    catViewPeriod: 'month',
-    catManageType: 'income'
+    catViewPeriod: 'month'
   };
 
   const $ = (id) => document.getElementById(id);
@@ -924,7 +632,6 @@
     toastTimer = setTimeout(()=> el.classList.remove('show'), 2200);
   }
 
-  // ====== Data layer (this device's browser storage only) ======
   async function loadData(){
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -939,7 +646,6 @@
   async function saveEntries(){
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
-      syncToCloud();
       return true;
     }catch(e){
       console.error('save entries failed', e);
@@ -950,189 +656,11 @@
   async function saveCategories(){
     try{
       localStorage.setItem(CAT_KEY, JSON.stringify(state.categories));
-      syncToCloud();
       return true;
     }catch(e){
       console.error('save categories failed', e);
       showToast('저장 실패: 이 브라우저에서 저장 공간을 사용할 수 없어요', 'error');
       return false;
-    }
-  }
-
-  // ====== Cloud sync (Firebase Auth + Firestore) ======
-  function syncToCloud(){
-    if(!firebaseEnabled || !currentUser) return;
-    db.collection('users').doc(currentUser.uid)
-      .set({ entries: state.entries, categories: state.categories })
-      .catch(err => { console.error('클라우드 저장 실패', err); showToast('클라우드 저장에 실패했어요', 'error'); });
-  }
-
-  async function loadFromCloud(user){
-    const ref = db.collection('users').doc(user.uid);
-    const snap = await ref.get();
-    if(snap.exists){
-      const data = snap.data();
-      state.entries = Array.isArray(data.entries) ? data.entries : [];
-      state.categories = data.categories || JSON.parse(JSON.stringify(defaultCats));
-    }else{
-      // first login on this account — upload whatever is on this device so nothing gets lost
-      await ref.set({ entries: state.entries, categories: state.categories });
-    }
-    try{
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
-      localStorage.setItem(CAT_KEY, JSON.stringify(state.categories));
-    }catch(e){ /* not critical — Firestore is the source of truth once logged in */ }
-  }
-
-  const loginScreen = $('loginScreen');
-  const appRoot = $('appRoot');
-  const bottomNav = $('bottomNav');
-
-  function showApp(){
-    loginScreen.classList.add('hidden');
-    appRoot.classList.remove('hidden');
-    bottomNav.classList.remove('hidden');
-    const accountCard = $('accountCard');
-    if(currentUser){
-      accountCard.classList.remove('hidden');
-      $('accountEmailLine').textContent = `로그인 계정: ${currentUser.email}`;
-    }else{
-      accountCard.classList.add('hidden');
-    }
-  }
-  function showLoginScreenUI(){
-    appRoot.classList.add('hidden');
-    bottomNav.classList.add('hidden');
-    loginScreen.classList.remove('hidden');
-  }
-
-  let authMode = 'login'; // 'login' | 'signup'
-  const AUTH_ERROR_MESSAGES = {
-    'auth/invalid-email': '이메일 형식이 올바르지 않습니다.',
-    'auth/user-not-found': '가입되지 않은 이메일입니다.',
-    'auth/wrong-password': '비밀번호가 일치하지 않습니다.',
-    'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않습니다.',
-    'auth/email-already-in-use': '이미 가입된 이메일입니다.',
-    'auth/weak-password': '비밀번호는 6자 이상이어야 합니다.',
-    'auth/missing-password': '비밀번호를 입력해주세요.'
-  };
-  function setAuthMode(mode){
-    authMode = mode;
-    $('authErrorText').textContent = '';
-    if(mode === 'signup'){
-      $('authScreenTitle').textContent = '회원가입';
-      $('authScreenSubtitle').textContent = '이메일과 비밀번호로 새 계정을 만드세요.';
-      $('authSubmitBtn').textContent = '회원가입';
-      $('authSwitchText').textContent = '이미 계정이 있으신가요?';
-      $('authSwitchLink').textContent = '로그인';
-    }else{
-      $('authScreenTitle').textContent = '로그인';
-      $('authScreenSubtitle').textContent = '이메일과 비밀번호로 로그인하세요.';
-      $('authSubmitBtn').textContent = '로그인';
-      $('authSwitchText').textContent = '계정이 없으신가요?';
-      $('authSwitchLink').textContent = '회원가입';
-    }
-  }
-  if(firebaseEnabled){
-    $('authSwitchLink').onclick = (e)=>{
-      e.preventDefault();
-      setAuthMode(authMode === 'login' ? 'signup' : 'login');
-    };
-
-    $('authPwToggleBtn').addEventListener('click', ()=>{
-      const pwInput = $('authPasswordInput');
-      const showing = pwInput.type === 'text';
-      pwInput.type = showing ? 'password' : 'text';
-      $('authPwToggleBtn').textContent = showing ? '보기' : '숨기기';
-    });
-
-    let authSubmitInFlight = false;
-    async function handleAuthSubmit(){
-      if(authSubmitInFlight) return;
-      const email = $('authEmailInput').value.trim();
-      const password = $('authPasswordInput').value.trim();
-      const errorEl = $('authErrorText');
-      errorEl.textContent = '';
-      if(!email){ errorEl.textContent = '이메일을 입력해주세요.'; return; }
-      authSubmitInFlight = true;
-      try{
-        if(authMode === 'signup'){
-          await auth.createUserWithEmailAndPassword(email, password);
-        }else{
-          await auth.signInWithEmailAndPassword(email, password);
-        }
-      }catch(e){
-        errorEl.textContent = AUTH_ERROR_MESSAGES[e.code] || ('오류: ' + e.message);
-      }finally{
-        authSubmitInFlight = false;
-      }
-    }
-    $('authSubmitBtn').addEventListener('click', handleAuthSubmit);
-    $('authPasswordInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') handleAuthSubmit(); });
-
-    $('logoutBtn').addEventListener('click', async ()=>{
-      await auth.signOut();
-      // wipe this device's local copy so the next account that logs in here
-      // never inherits (or accidentally uploads) the previous account's records
-      state.entries = [];
-      state.categories = JSON.parse(JSON.stringify(defaultCats));
-      state.selectedDate = null;
-      state.editingId = null;
-      state.selectedIds.clear();
-      try{
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(CAT_KEY);
-      }catch(e){ /* not critical */ }
-      renderAll();
-    });
-
-    auth.onAuthStateChanged(async (user)=>{
-      if(user){
-        currentUser = user;
-        // show the app instantly with whatever's cached locally — don't make the user
-        // stare at a blank screen while we wait on a Firestore round trip
-        showApp();
-        renderAll();
-        try{
-          await loadFromCloud(user);
-          renderAll(); // refresh once the authoritative cloud copy arrives
-        }catch(e){
-          console.error('클라우드 불러오기 실패', e);
-          showToast('클라우드에서 기록을 불러오지 못했어요', 'error');
-        }
-      }else{
-        currentUser = null;
-        showLoginScreenUI();
-      }
-    });
-  }
-
-  function backupPayload(){
-    return {
-      app: 'yeongseon-ledger-backup',
-      exportedAt: new Date().toISOString(),
-      entries: state.entries,
-      categories: state.categories
-    };
-  }
-
-  function renderBackupStatus(){
-    const el = $('backupStatusLine');
-    if(!el) return;
-    const last = localStorage.getItem(LAST_EXPORT_KEY);
-    if(!last){
-      el.textContent = '아직 백업 파일을 내보낸 적이 없어요.';
-      el.classList.add('stale');
-      return;
-    }
-    const days = Math.floor((Date.now() - new Date(last).getTime()) / (1000*60*60*24));
-    const dateLabel = new Date(last).toLocaleDateString('ko-KR');
-    if(days <= 0){
-      el.textContent = `마지막 백업: 오늘 (${dateLabel})`;
-      el.classList.remove('stale');
-    }else{
-      el.textContent = `마지막 백업: ${dateLabel} (${days}일 전)`;
-      el.classList.toggle('stale', days >= 14);
     }
   }
 
@@ -1151,8 +679,6 @@
     sel.innerHTML = list.map(c => `<option value="${c}">${c}</option>`).join('');
   }
 
-  const PAYMENT_METHOD_LABELS = { cash: '현금', card: '카드' };
-
   function setType(type){
     state.currentType = type;
     document.querySelectorAll('#entryTypeToggle button').forEach(b=>{
@@ -1160,19 +686,8 @@
     });
     const btn = $('saveBtn');
     btn.className = 'save-btn ' + (type === 'income' ? 'income-mode' : 'expense-mode');
-    $('paymentMethodField').classList.toggle('hidden', type !== 'expense');
     renderCategorySelect();
   }
-
-  function setPaymentMethod(pm){
-    state.currentPaymentMethod = pm;
-    document.querySelectorAll('#paymentMethodToggle button').forEach(b=>{
-      b.classList.toggle('active', b.dataset.pm === pm);
-    });
-  }
-  document.querySelectorAll('#paymentMethodToggle button').forEach(b=>{
-    b.addEventListener('click', ()=> setPaymentMethod(b.dataset.pm));
-  });
 
   function setPeriod(period){
     state.currentPeriod = period;
@@ -1247,7 +762,7 @@
               <input type="checkbox" class="chk" data-id="${e.id}" ${state.selectedIds.has(e.id) ? 'checked' : ''}>
               <div class="badge">${e.type === 'income' ? '수' : '지'}</div>
               <div class="info">
-                <div class="cat">${escapeHtml(e.category)}${e.memo ? ' · ' + escapeHtml(e.memo) : ''}${e.paymentMethod ? `<span class="pm-tag">${PAYMENT_METHOD_LABELS[e.paymentMethod] || e.paymentMethod}</span>` : ''}</div>
+                <div class="cat">${escapeHtml(e.category)}${e.memo ? ' · ' + escapeHtml(e.memo) : ''}</div>
               </div>
               <div class="amt">${e.type === 'income' ? '+' : '-'}${e.amount.toLocaleString('ko-KR')}원</div>
             </div>
@@ -1283,7 +798,7 @@
   function renderCalendar(){
     const year = state.calendarMonth.getFullYear();
     const month = state.calendarMonth.getMonth();
-    const monthLabel = `${year}년 ${month+1}월`;
+    $('calMonthLabel').textContent = `${year}년 ${month+1}월`;
 
     const firstDay = new Date(year, month, 1);
     const startWeekday = firstDay.getDay();
@@ -1315,16 +830,15 @@
       if(dateKey === state.selectedDate) classes.push('selected');
       cells += `<button type="button" class="${classes.join(' ')}" data-date="${dateKey}">${d}${dotsHtml}</button>`;
     }
+    $('calGrid').innerHTML = cells;
 
-    const filterLabelText = state.selectedDate ? `${fmtDateHeader(state.selectedDate)} 기록만 보는 중` : '';
-
-    // update every calendar instance on the page (record page + records subpage) in sync
-    document.querySelectorAll('.cal-month-label').forEach(el => { el.textContent = monthLabel; });
-    document.querySelectorAll('.cal-grid').forEach(el => { el.innerHTML = cells; });
-    document.querySelectorAll('.cal-filter-row').forEach(el => {
-      el.style.display = state.selectedDate ? 'flex' : 'none';
-    });
-    document.querySelectorAll('.cal-filter-label').forEach(el => { el.textContent = filterLabelText; });
+    const filterRow = $('calFilterRow');
+    if(state.selectedDate){
+      filterRow.style.display = 'flex';
+      $('calFilterLabel').textContent = `${fmtDateHeader(state.selectedDate)} 기록만 보는 중`;
+    } else {
+      filterRow.style.display = 'none';
+    }
   }
 
   function escapeHtml(str){
@@ -1497,44 +1011,23 @@
     }).join('');
   }
 
-  function renderCategoryManageList(){
-    const listEl = $('catManageList');
-    if(!listEl) return;
-    const type = state.catManageType;
-    const other = otherLabelOf(type);
-    const list = state.categories[type] || [];
-
-    if(list.length === 0){
-      listEl.innerHTML = '<div class="cat-manage-empty">카테고리가 없어요.</div>';
-      return;
-    }
-
-    listEl.innerHTML = list.map(name => {
-      const isPinned = name === other;
-      return `
-        <div class="cat-manage-item">
-          <span class="name">${escapeHtml(name)}</span>
-          ${isPinned
-            ? '<span class="pinned-tag">기본</span>'
-            : `<button type="button" class="del-cat-btn" data-cat-name="${escapeHtml(name)}" title="삭제">✕</button>`}
-        </div>
-      `;
-    }).join('');
-  }
-
   function renderAll(){
     renderSummary();
     renderCalendar();
     renderList();
     renderChart();
     renderCategoryBreakdown();
-    renderCategoryManageList();
-    renderBackupStatus();
   }
 
   // Backup: export to JSON file / import from JSON file
   $('exportBtn').addEventListener('click', ()=>{
-    const blob = new Blob([JSON.stringify(backupPayload(), null, 2)], { type: 'application/json' });
+    const payload = {
+      app: 'yeongseon-ledger-backup',
+      exportedAt: new Date().toISOString(),
+      entries: state.entries,
+      categories: state.categories
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1543,8 +1036,6 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    localStorage.setItem(LAST_EXPORT_KEY, new Date().toISOString());
-    renderBackupStatus();
     showToast('백업 파일을 내보냈어요 ⬇️');
   });
 
@@ -1563,11 +1054,10 @@
         }
         if(!confirm(`백업 파일을 불러오면 현재 기록(${state.entries.length}건)이 파일 내용으로 교체됩니다. 계속할까요?`)) return;
 
-        cancelEdit();
-        state.selectedIds.clear();
-
         state.entries = data.entries;
         if(data.categories) state.categories = data.categories;
+        state.selectedIds.clear();
+        cancelEdit();
 
         const ok1 = await saveEntries();
         const ok2 = await saveCategories();
@@ -1580,174 +1070,6 @@
       e.target.value = '';
     };
     reader.readAsText(file);
-  });
-
-  $('resetAllBtn').addEventListener('click', async ()=>{
-    if(!confirm(`정말 전체 초기화하시겠어요?\n현재 기록(${state.entries.length}건)과 카테고리가 모두 삭제되며, 되돌릴 수 없어요.`)) return;
-    cancelEdit();
-    state.entries = [];
-    state.categories = JSON.parse(JSON.stringify(defaultCats));
-    state.selectedIds.clear();
-    state.selectedDate = null;
-    const ok1 = await saveEntries();
-    const ok2 = await saveCategories();
-    renderAll();
-    if(ok1 && ok2) showToast('전체 초기화되었습니다');
-  });
-
-  $('withdrawBtn').addEventListener('click', async ()=>{
-    if(!confirm('정말 회원 탈퇴하시겠어요?\n계정과 모든 기록이 영구적으로 삭제되며, 되돌릴 수 없어요.')) return;
-    if(firebaseEnabled && currentUser){
-      try{
-        await db.collection('users').doc(currentUser.uid).delete();
-        await currentUser.delete();
-        showToast('탈퇴 처리되었습니다');
-      }catch(e){
-        if(e.code === 'auth/requires-recent-login'){
-          alert('보안을 위해 최근에 로그인한 상태여야 탈퇴할 수 있어요. 로그아웃 후 다시 로그인하고 시도해주세요.');
-        }else{
-          console.error(e);
-          showToast('탈퇴 처리 중 오류가 발생했어요', 'error');
-        }
-      }
-    }else{
-      cancelEdit();
-      state.entries = [];
-      state.categories = JSON.parse(JSON.stringify(defaultCats));
-      state.selectedIds.clear();
-      state.selectedDate = null;
-      try{
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(CAT_KEY);
-      }catch(e){ /* not critical */ }
-      renderAll();
-      showToast('탈퇴 처리되었습니다');
-    }
-  });
-
-  // Calculator (계산기)
-  const calcState = { display: '0', prevValue: null, operator: null, resetOnNextDigit: false };
-
-  function calcRender(){
-    $('calcDisplay').textContent = calcState.display;
-  }
-
-  function calcInputDigit(d){
-    if(calcState.resetOnNextDigit || calcState.display === '0'){
-      calcState.display = d;
-      calcState.resetOnNextDigit = false;
-    } else if(calcState.display.replace('-','').replace('.','').length < 12){
-      calcState.display += d;
-    }
-    calcRender();
-  }
-
-  function calcInputDot(){
-    if(calcState.resetOnNextDigit){
-      calcState.display = '0.';
-      calcState.resetOnNextDigit = false;
-    } else if(!calcState.display.includes('.')){
-      calcState.display += '.';
-    }
-    calcRender();
-  }
-
-  function calcCompute(prev, curr, op){
-    switch(op){
-      case '+': return prev + curr;
-      case '−': return prev - curr;
-      case '×': return prev * curr;
-      case '÷': return curr === 0 ? 0 : prev / curr;
-      default: return curr;
-    }
-  }
-
-  function calcFormatResult(n){
-    if(!isFinite(n)) return '0';
-    // trim floating point noise, keep up to 6 decimal places
-    const rounded = Math.round(n * 1e6) / 1e6;
-    return String(rounded);
-  }
-
-  function calcSetOperator(op){
-    const curr = parseFloat(calcState.display);
-    if(calcState.operator && !calcState.resetOnNextDigit){
-      const result = calcCompute(calcState.prevValue, curr, calcState.operator);
-      calcState.prevValue = result;
-      calcState.display = calcFormatResult(result);
-    } else {
-      calcState.prevValue = curr;
-    }
-    calcState.operator = op;
-    calcState.resetOnNextDigit = true;
-    calcRender();
-  }
-
-  function calcEquals(){
-    if(calcState.operator === null || calcState.prevValue === null) return;
-    const curr = parseFloat(calcState.display);
-    const result = calcCompute(calcState.prevValue, curr, calcState.operator);
-    calcState.display = calcFormatResult(result);
-    calcState.prevValue = null;
-    calcState.operator = null;
-    calcState.resetOnNextDigit = true;
-    calcRender();
-  }
-
-  function calcClear(){
-    calcState.display = '0';
-    calcState.prevValue = null;
-    calcState.operator = null;
-    calcState.resetOnNextDigit = false;
-    calcRender();
-  }
-
-  function calcBackspace(){
-    if(calcState.resetOnNextDigit) return;
-    calcState.display = calcState.display.length > 1 ? calcState.display.slice(0, -1) : '0';
-    calcRender();
-  }
-
-  function calcPercent(){
-    const curr = parseFloat(calcState.display);
-    calcState.display = calcFormatResult(curr / 100);
-    calcRender();
-  }
-
-  function openCalculator(){
-    calcClear();
-    // seed with whatever's already in the amount field, if any
-    const existing = $('amountInput').value.replace(/[^0-9]/g, '');
-    if(existing){ calcState.display = existing; calcRender(); }
-    $('calcOverlay').classList.add('show');
-  }
-  function closeCalculator(){
-    $('calcOverlay').classList.remove('show');
-  }
-
-  $('calcOpenBtn').addEventListener('click', openCalculator);
-  $('calcCloseBtn').addEventListener('click', closeCalculator);
-  $('calcOverlay').addEventListener('click', (e)=>{
-    if(e.target === $('calcOverlay')) closeCalculator();
-  });
-
-  $('calcApplyBtn').addEventListener('click', ()=>{
-    const value = Math.round(Math.abs(parseFloat(calcState.display) || 0));
-    $('amountInput').value = value.toLocaleString('ko-KR');
-    closeCalculator();
-  });
-
-  document.querySelectorAll('.calc-grid button').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const action = btn.dataset.calc;
-      if(action === 'digit') calcInputDigit(btn.dataset.val);
-      else if(action === 'dot') calcInputDot();
-      else if(action === 'op') calcSetOperator(btn.dataset.op);
-      else if(action === 'equals') calcEquals();
-      else if(action === 'clear') calcClear();
-      else if(action === 'back') calcBackspace();
-      else if(action === 'percent') calcPercent();
-    });
   });
 
   // Footer accordion (개인정보처리방침 / 이용약관 / 보안 안내)
@@ -1810,35 +1132,6 @@
       renderCategoryBreakdown();
     });
   });
-  document.querySelectorAll('#catManageTypeToggle button').forEach(b=>{
-    b.addEventListener('click', ()=>{
-      state.catManageType = b.dataset.type;
-      document.querySelectorAll('#catManageTypeToggle button').forEach(x=>{
-        x.classList.toggle('active', x === b);
-      });
-      renderCategoryManageList();
-    });
-  });
-  $('catManageList').addEventListener('click', async (e)=>{
-    const btn = e.target.closest('.del-cat-btn');
-    if(!btn) return;
-    const name = btn.dataset.catName;
-    const type = state.catManageType;
-    if(!confirm(`'${name}' 카테고리를 삭제하시겠습니까?\n(이미 저장된 기록의 카테고리 이름은 그대로 남아있어요.)`)) return;
-
-    state.categories[type] = state.categories[type].filter(c => c !== name);
-    const ok = await saveCategories();
-    if(ok){
-      if(state.currentType === type){
-        renderCategorySelect();
-        if($('catSelect').value === '' && state.categories[type].length > 0){
-          $('catSelect').value = state.categories[type][0];
-        }
-      }
-      renderCategoryManageList();
-      showToast('카테고리를 삭제했어요 🗑️');
-    }
-  });
   document.querySelectorAll('#catViewPeriodToggle button').forEach(b=>{
     b.addEventListener('click', ()=>{
       state.catViewPeriod = b.dataset.catperiod;
@@ -1892,15 +1185,12 @@
     $('amountInput').value = entry.amount.toLocaleString('ko-KR');
     $('dateInput').value = entry.date;
     $('memoInput').value = entry.memo || '';
-    setPaymentMethod(entry.paymentMethod || 'cash');
 
     state.editingId = entry.id;
     $('editBanner').classList.add('show');
     $('saveBtn').textContent = '수정 완료';
 
-    // the entry form lives on the 기록 page — switch there so the user actually sees it
-    showPage('record');
-    $('entryFormCard').scrollIntoView({ behavior:'smooth', block:'start' });
+    document.querySelector('.card').scrollIntoView({ behavior:'smooth', block:'start' });
   }
 
   function cancelEdit(){
@@ -1909,7 +1199,6 @@
     $('saveBtn').textContent = '저장하기';
     $('amountInput').value = '';
     $('memoInput').value = '';
-    setPaymentMethod('cash');
   }
 
   $('cancelEditBtn').addEventListener('click', cancelEdit);
@@ -1924,8 +1213,6 @@
     if(!category){ alert('카테고리를 선택해주세요.'); return; }
     if(!amount || amount <= 0){ alert('금액을 입력해주세요.'); return; }
 
-    const paymentMethod = state.currentType === 'expense' ? state.currentPaymentMethod : undefined;
-
     if(state.editingId){
       const target = state.entries.find(en => en.id === state.editingId);
       if(target){
@@ -1934,13 +1221,11 @@
         target.amount = amount;
         target.date = date;
         target.memo = memo;
-        if(paymentMethod) target.paymentMethod = paymentMethod;
-        else delete target.paymentMethod;
       }
       const ok = await saveEntries();
       cancelEdit();
       renderAll();
-      if(ok) showToast('수정 되었습니다');
+      if(ok) showToast('이 기기에 수정 내용을 저장했어요 ✅');
       return;
     }
 
@@ -1950,11 +1235,10 @@
       category, amount, date, memo,
       createdAt: new Date().toISOString()
     };
-    if(paymentMethod) entry.paymentMethod = paymentMethod;
     state.entries.push(entry);
     const ok = await saveEntries();
     renderAll();
-    if(ok) showToast('저장 되었습니다');
+    if(ok) showToast('이 기기에 저장했어요 ✅');
 
     $('amountInput').value = '';
     $('memoInput').value = '';
@@ -1976,7 +1260,7 @@
     if(state.editingId === id) cancelEdit();
     const ok = await saveEntries();
     renderAll();
-    if(ok) showToast('삭제 되었습니다');
+    if(ok) showToast('삭제했어요 🗑️');
   });
 
   $('recordList').addEventListener('change', (e)=>{
@@ -1998,36 +1282,26 @@
     renderList();
   });
 
-  // Delegated calendar events — works across both calendar instances (record page + records subpage)
-  document.addEventListener('click', (e)=>{
-    const prevBtn = e.target.closest('[data-cal-action="prev"]');
-    if(prevBtn){
-      state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth()-1, 1);
-      renderCalendar();
-      return;
-    }
-    const nextBtn = e.target.closest('[data-cal-action="next"]');
-    if(nextBtn){
-      state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth()+1, 1);
-      renderCalendar();
-      return;
-    }
-    const clearBtn = e.target.closest('[data-cal-action="clear"]');
-    if(clearBtn){
-      state.selectedDate = null;
-      saveListFilter();
-      renderCalendar();
-      renderList();
-      return;
-    }
-    const dayBtn = e.target.closest('.cal-day');
-    if(dayBtn && !dayBtn.classList.contains('empty')){
-      const date = dayBtn.dataset.date;
-      state.selectedDate = (state.selectedDate === date) ? null : date;
-      saveListFilter();
-      renderCalendar();
-      renderList();
-    }
+  $('calPrev').addEventListener('click', ()=>{
+    state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth()-1, 1);
+    renderCalendar();
+  });
+  $('calNext').addEventListener('click', ()=>{
+    state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth()+1, 1);
+    renderCalendar();
+  });
+  $('calGrid').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.cal-day');
+    if(!btn || btn.classList.contains('empty')) return;
+    const date = btn.dataset.date;
+    state.selectedDate = (state.selectedDate === date) ? null : date;
+    renderCalendar();
+    renderList();
+  });
+  $('calClearFilter').addEventListener('click', ()=>{
+    state.selectedDate = null;
+    renderCalendar();
+    renderList();
   });
 
   $('bulkDelBtn').addEventListener('click', async ()=>{
@@ -2039,7 +1313,7 @@
     state.selectedIds.clear();
     const ok = await saveEntries();
     renderAll();
-    if(ok) showToast(`${count}건 삭제 되었습니다`);
+    if(ok) showToast(`${count}건 삭제했어요 🗑️`);
   });
 
   function isStorageAvailable(){
@@ -2058,20 +1332,11 @@
     if(!isStorageAvailable()){
       showToast('이 브라우저는 저장 기능을 막고 있어요 (시크릿 모드 등) — 기록이 저장되지 않을 수 있어요', 'error');
     }
-    // ask the browser not to silently clear our storage under storage pressure / long inactivity
-    if(navigator.storage && navigator.storage.persist){
-      try{ await navigator.storage.persist(); }catch(e){ /* not critical if this fails */ }
-    }
     await loadData();
     setType('income');
     setPeriod('day');
-    const savedFilter = localStorage.getItem(LIST_FILTER_KEY);
-    if(savedFilter === LIST_FILTER_ALL) state.selectedDate = null; // user pinned "전체보기"
-    else if(savedFilter) state.selectedDate = savedFilter; // user pinned a specific date
-    else state.selectedDate = todayStr(); // first-ever run: show today's records right away
+    state.selectedDate = todayStr(); // show today's records right away without needing to tap the calendar
     renderAll();
-    if(!firebaseEnabled) showApp(); // no cloud login configured — behave exactly as a local-only app
-    // when firebaseEnabled is true, onAuthStateChanged (registered above) decides login screen vs app
   }
   init();
 })();

@@ -401,19 +401,35 @@
   .backup-desc{ font-size:12.5px; color: var(--text-soft); margin:0 0 14px; line-height:1.5; }
 
   /* Category management */
+  .cat-manage-header{
+    display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;
+  }
+  .cat-manage-header label{
+    display:flex; align-items:center; gap:6px; font-size:12.5px; color: var(--text-soft); cursor:pointer;
+  }
+  .cat-manage-header-actions{ display:flex; gap:6px; }
+  .cat-manage-header-actions button{
+    border:1.5px solid var(--expense-bg); background: var(--expense-bg); color: var(--expense);
+    font-size:12px; font-weight:700; padding:6px 10px; border-radius:8px; cursor:pointer;
+  }
+  .cat-manage-header-actions button:disabled{ opacity:0.4; cursor:default; }
   .cat-manage-list{ display:flex; flex-direction:column; gap:8px; }
   .cat-manage-item{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    display:flex; align-items:center; gap:10px;
     padding:11px 12px; border-radius:10px; background: var(--card-soft);
   }
-  .cat-manage-item .name{ font-size:14px; font-weight:600; color: var(--text); }
+  .cat-manage-item .name{ font-size:14px; font-weight:600; color: var(--text); flex:1; min-width:0; overflow-wrap:anywhere; }
+  .cat-manage-item .cat-edit-input{
+    flex:1; min-width:0; padding:6px 8px; font-size:14px; border-radius:7px; border:1.5px solid var(--accent-pale);
+  }
   .cat-manage-item .pinned-tag{
     font-size:11px; color: var(--text-soft); font-weight:600; background: var(--accent-pale);
-    padding:3px 8px; border-radius:8px;
+    padding:3px 8px; border-radius:8px; flex-shrink:0;
   }
-  .cat-manage-item .del-cat-btn{
-    border:none; background:none; color:#b9cbd4; font-size:16px; cursor:pointer; padding:2px 6px; flex-shrink:0;
+  .cat-manage-item .edit-cat-btn, .cat-manage-item .del-cat-btn{
+    border:none; background:none; color:#b9cbd4; font-size:15px; cursor:pointer; padding:2px 6px; flex-shrink:0;
   }
+  .cat-manage-item .edit-cat-btn:hover{ color: var(--accent-deep); }
   .cat-manage-item .del-cat-btn:hover{ color: var(--expense); }
   .cat-manage-empty{ text-align:center; color: var(--text-soft); font-size:12.5px; padding:16px 0; }
   .backup-actions{ display:flex; flex-direction:column; gap:8px; }
@@ -697,7 +713,7 @@
         </div>
       </div>
 
-      <div class="field hidden" id="paymentMethodField">
+      <div class="field" id="paymentMethodField">
         <label>결제 수단</label>
         <div class="type-toggle pm-toggle" id="paymentMethodToggle">
           <button type="button" data-pm="cash" class="active">현금</button>
@@ -732,6 +748,13 @@
       <div class="type-toggle" id="catManageTypeToggle">
         <button data-type="income" class="active">수입</button>
         <button data-type="expense">지출</button>
+      </div>
+      <div class="cat-manage-header">
+        <label><input type="checkbox" id="catManageSelectAll">전체 선택</label>
+        <div class="cat-manage-header-actions">
+          <button type="button" id="catManageDeleteSelected" disabled>선택 삭제</button>
+          <button type="button" id="catManageDeleteAll">전체 삭제</button>
+        </div>
       </div>
       <div class="cat-manage-list" id="catManageList"></div>
     </div>
@@ -1160,7 +1183,6 @@
     });
     const btn = $('saveBtn');
     btn.className = 'save-btn ' + (type === 'income' ? 'income-mode' : 'expense-mode');
-    $('paymentMethodField').classList.toggle('hidden', type !== 'expense');
     renderCategorySelect();
   }
 
@@ -1410,7 +1432,7 @@
         maintainAspectRatio:false,
         plugins:{ legend:{ display:false } },
         scales:{
-          x:{ grid:{ display:false }, ticks:{ color:'#6b8a99', font:{ size:11 } } },
+          x:{ grid:{ display:false }, ticks:{ color:'#6b8a99', font:{ size:11 }, maxRotation:0, minRotation:0, autoSkip:true, autoSkipPadding:6 } },
           y:{ grid:{ color:'#eaf6fc' }, ticks:{ color:'#6b8a99', font:{ size:10 }, callback:(v)=> v>=10000? (v/10000)+'만' : v } }
         }
       }
@@ -1497,29 +1519,89 @@
     }).join('');
   }
 
+  let selectedCatNames = new Set();
+
   function renderCategoryManageList(){
     const listEl = $('catManageList');
     if(!listEl) return;
     const type = state.catManageType;
     const other = otherLabelOf(type);
     const list = state.categories[type] || [];
+    const selectableNames = list.filter(n => n !== other);
+
+    // drop selections that no longer exist (e.g. after a delete)
+    selectedCatNames.forEach(n => { if(!selectableNames.includes(n)) selectedCatNames.delete(n); });
 
     if(list.length === 0){
       listEl.innerHTML = '<div class="cat-manage-empty">카테고리가 없어요.</div>';
-      return;
+    } else {
+      listEl.innerHTML = list.map(name => {
+        const isPinned = name === other;
+        if(isPinned){
+          return `
+            <div class="cat-manage-item">
+              <span class="name">${escapeHtml(name)}</span>
+              <span class="pinned-tag">기본</span>
+            </div>
+          `;
+        }
+        return `
+          <div class="cat-manage-item" data-cat-name="${escapeHtml(name)}">
+            <input type="checkbox" class="cat-manage-chk" data-cat-name="${escapeHtml(name)}" ${selectedCatNames.has(name) ? 'checked' : ''}>
+            <span class="name">${escapeHtml(name)}</span>
+            <button type="button" class="edit-cat-btn" data-cat-name="${escapeHtml(name)}" title="수정">✏️</button>
+            <button type="button" class="del-cat-btn" data-cat-name="${escapeHtml(name)}" title="삭제">✕</button>
+          </div>
+        `;
+      }).join('');
     }
 
-    listEl.innerHTML = list.map(name => {
-      const isPinned = name === other;
-      return `
-        <div class="cat-manage-item">
-          <span class="name">${escapeHtml(name)}</span>
-          ${isPinned
-            ? '<span class="pinned-tag">기본</span>'
-            : `<button type="button" class="del-cat-btn" data-cat-name="${escapeHtml(name)}" title="삭제">✕</button>`}
-        </div>
-      `;
-    }).join('');
+    const selectAllChk = $('catManageSelectAll');
+    selectAllChk.checked = selectableNames.length > 0 && selectedCatNames.size === selectableNames.length;
+    selectAllChk.disabled = selectableNames.length === 0;
+    $('catManageDeleteSelected').disabled = selectedCatNames.size === 0;
+    $('catManageDeleteAll').disabled = selectableNames.length === 0;
+  }
+
+  async function deleteCategories(type, names){
+    if(names.length === 0) return;
+    const nameSet = new Set(names);
+    state.categories[type] = state.categories[type].filter(c => !nameSet.has(c));
+    selectedCatNames.clear();
+    const ok = await saveCategories();
+    if(ok){
+      if(state.currentType === type){
+        renderCategorySelect();
+        if($('catSelect').value === '' && state.categories[type].length > 0){
+          $('catSelect').value = state.categories[type][0];
+        }
+      }
+      renderCategoryManageList();
+      showToast(names.length > 1 ? `${names.length}개 카테고리를 삭제했어요 🗑️` : '카테고리를 삭제했어요 🗑️');
+    }
+  }
+
+  async function renameCategory(type, oldName, newName){
+    const catList = state.categories[type];
+    const idx = catList.indexOf(oldName);
+    if(idx === -1) return;
+    if(catList.includes(newName)){
+      showToast('이미 있는 카테고리 이름이에요', 'error');
+      renderCategoryManageList();
+      return;
+    }
+    catList[idx] = newName;
+    // keep existing records pointing at their (renamed) category
+    state.entries.forEach(e => { if(e.type === type && e.category === oldName) e.category = newName; });
+
+    const ok1 = await saveCategories();
+    const ok2 = await saveEntries();
+    if(ok1 && ok2){
+      if(state.currentType === type) renderCategorySelect();
+      renderList();
+      renderCategoryManageList();
+      showToast('카테고리를 수정했어요');
+    }
   }
 
   function renderAll(){
@@ -1816,28 +1898,80 @@
       document.querySelectorAll('#catManageTypeToggle button').forEach(x=>{
         x.classList.toggle('active', x === b);
       });
+      selectedCatNames.clear();
       renderCategoryManageList();
     });
   });
-  $('catManageList').addEventListener('click', async (e)=>{
-    const btn = e.target.closest('.del-cat-btn');
-    if(!btn) return;
-    const name = btn.dataset.catName;
-    const type = state.catManageType;
-    if(!confirm(`'${name}' 카테고리를 삭제하시겠습니까?\n(이미 저장된 기록의 카테고리 이름은 그대로 남아있어요.)`)) return;
 
-    state.categories[type] = state.categories[type].filter(c => c !== name);
-    const ok = await saveCategories();
-    if(ok){
-      if(state.currentType === type){
-        renderCategorySelect();
-        if($('catSelect').value === '' && state.categories[type].length > 0){
-          $('catSelect').value = state.categories[type][0];
-        }
-      }
-      renderCategoryManageList();
-      showToast('카테고리를 삭제했어요 🗑️');
+  $('catManageList').addEventListener('click', async (e)=>{
+    const delBtn = e.target.closest('.del-cat-btn');
+    if(delBtn){
+      const name = delBtn.dataset.catName;
+      if(!confirm(`'${name}' 카테고리를 삭제하시겠습니까?\n(이미 저장된 기록의 카테고리 이름은 그대로 남아있어요.)`)) return;
+      await deleteCategories(state.catManageType, [name]);
+      return;
     }
+
+    const editBtn = e.target.closest('.edit-cat-btn');
+    if(editBtn){
+      const item = editBtn.closest('.cat-manage-item');
+      const nameEl = item.querySelector('.name');
+      const oldName = editBtn.dataset.catName;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'cat-edit-input';
+      input.value = oldName;
+      nameEl.replaceWith(input);
+      input.focus();
+      input.select();
+
+      let committed = false;
+      const commit = async ()=>{
+        if(committed) return;
+        committed = true;
+        const newName = input.value.trim();
+        if(!newName || newName === oldName){ renderCategoryManageList(); return; }
+        await renameCategory(state.catManageType, oldName, newName);
+      };
+      input.addEventListener('keydown', (ev)=>{
+        if(ev.key === 'Enter') commit();
+        if(ev.key === 'Escape'){ committed = true; renderCategoryManageList(); }
+      });
+      input.addEventListener('blur', commit);
+    }
+  });
+
+  $('catManageList').addEventListener('change', (e)=>{
+    const chk = e.target.closest('.cat-manage-chk');
+    if(!chk) return;
+    if(chk.checked) selectedCatNames.add(chk.dataset.catName);
+    else selectedCatNames.delete(chk.dataset.catName);
+    renderCategoryManageList();
+  });
+
+  $('catManageSelectAll').addEventListener('change', (e)=>{
+    const type = state.catManageType;
+    const other = otherLabelOf(type);
+    const selectableNames = (state.categories[type] || []).filter(n => n !== other);
+    if(e.target.checked) selectedCatNames = new Set(selectableNames);
+    else selectedCatNames.clear();
+    renderCategoryManageList();
+  });
+
+  $('catManageDeleteSelected').addEventListener('click', async ()=>{
+    const names = [...selectedCatNames];
+    if(names.length === 0) return;
+    if(!confirm(`선택한 카테고리 ${names.length}개를 삭제하시겠습니까?\n(이미 저장된 기록의 카테고리 이름은 그대로 남아있어요.)`)) return;
+    await deleteCategories(state.catManageType, names);
+  });
+
+  $('catManageDeleteAll').addEventListener('click', async ()=>{
+    const type = state.catManageType;
+    const other = otherLabelOf(type);
+    const names = (state.categories[type] || []).filter(n => n !== other);
+    if(names.length === 0) return;
+    if(!confirm(`'기본' 카테고리를 제외한 전체 카테고리(${names.length}개)를 삭제하시겠습니까?\n(이미 저장된 기록의 카테고리 이름은 그대로 남아있어요.)`)) return;
+    await deleteCategories(type, names);
   });
   document.querySelectorAll('#catViewPeriodToggle button').forEach(b=>{
     b.addEventListener('click', ()=>{
@@ -1924,7 +2058,7 @@
     if(!category){ alert('카테고리를 선택해주세요.'); return; }
     if(!amount || amount <= 0){ alert('금액을 입력해주세요.'); return; }
 
-    const paymentMethod = state.currentType === 'expense' ? state.currentPaymentMethod : undefined;
+    const paymentMethod = state.currentPaymentMethod;
 
     if(state.editingId){
       const target = state.entries.find(en => en.id === state.editingId);

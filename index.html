@@ -417,6 +417,8 @@
     font-size:12px; font-weight:700; padding:6px 10px; border-radius:8px; cursor:pointer;
   }
   .cat-manage-header-actions button:disabled{ opacity:0.4; cursor:default; }
+  .field-row{ display:flex; gap:8px; }
+  .field-row .field{ flex:1; min-width:0; }
   .notice-actions{ display:flex; gap:8px; }
   .notice-actions .save-btn{ width:auto; padding:10px 16px; margin-top:0; flex:0 0 auto; }
   .notice-actions .notice-clear-btn{
@@ -940,21 +942,25 @@
     <div class="card">
       <h2><span class="dot"></span>시스템 점검 공지</h2>
       <p class="backup-desc">저장하면 모든 사용자에게 즉시 공지 배너가 표시돼요.</p>
-      <div class="field">
-        <label>점검 시작 날짜</label>
-        <input type="date" id="noticeDateInput">
+      <div class="field-row">
+        <div class="field">
+          <label>점검 시작 날짜</label>
+          <input type="date" id="noticeDateInput">
+        </div>
+        <div class="field">
+          <label>점검 종료 날짜</label>
+          <input type="date" id="noticeEndDateInput">
+        </div>
       </div>
-      <div class="field">
-        <label>점검 시작 시간</label>
-        <input type="time" id="noticeTimeInput">
-      </div>
-      <div class="field">
-        <label>점검 종료 날짜</label>
-        <input type="date" id="noticeEndDateInput">
-      </div>
-      <div class="field">
-        <label>점검 종료 시간</label>
-        <input type="time" id="noticeEndTimeInput">
+      <div class="field-row">
+        <div class="field">
+          <label>점검 시작 시간</label>
+          <input type="time" id="noticeTimeInput">
+        </div>
+        <div class="field">
+          <label>점검 종료 시간</label>
+          <input type="time" id="noticeEndTimeInput">
+        </div>
       </div>
       <div class="field">
         <label>공지 내용</label>

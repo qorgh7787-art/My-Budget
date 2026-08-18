@@ -941,12 +941,20 @@
       <h2><span class="dot"></span>시스템 점검 공지</h2>
       <p class="backup-desc">저장하면 모든 사용자에게 즉시 공지 배너가 표시돼요.</p>
       <div class="field">
-        <label>점검 날짜</label>
+        <label>점검 시작 날짜</label>
         <input type="date" id="noticeDateInput">
       </div>
       <div class="field">
-        <label>점검 시간</label>
+        <label>점검 시작 시간</label>
         <input type="time" id="noticeTimeInput">
+      </div>
+      <div class="field">
+        <label>점검 종료 날짜</label>
+        <input type="date" id="noticeEndDateInput">
+      </div>
+      <div class="field">
+        <label>점검 종료 시간</label>
+        <input type="time" id="noticeEndTimeInput">
       </div>
       <div class="field">
         <label>공지 내용</label>
@@ -1286,12 +1294,19 @@
 
   function noticeDocRef(){ return db.collection('config').doc('notice'); }
 
+  function noticeRangeText(data){
+    const start = [data.date, data.time].filter(Boolean).join(' ');
+    const end = [data.endDate, data.endTime].filter(Boolean).join(' ');
+    if(start && end) return `${start} ~ ${end}`;
+    return start || end || '';
+  }
+
   function renderNoticeBanner(data){
     const banner = $('noticeBanner');
     const textEl = $('noticeBannerText');
     if(!banner || !textEl) return;
     if(data && data.active){
-      const when = [data.date, data.time].filter(Boolean).join(' ');
+      const when = noticeRangeText(data);
       textEl.textContent = `⚠️ 시스템 점검 안내${when ? ' (' + when + ')' : ''}: ${data.message || ''}`;
       banner.classList.remove('hidden');
     }else{
@@ -1306,8 +1321,10 @@
     if(data && data.active){
       $('noticeDateInput').value = data.date || '';
       $('noticeTimeInput').value = data.time || '';
+      $('noticeEndDateInput').value = data.endDate || '';
+      $('noticeEndTimeInput').value = data.endTime || '';
       $('noticeMessageInput').value = data.message || '';
-      statusEl.textContent = `현재 공지 중: ${[data.date, data.time].filter(Boolean).join(' ')} — ${data.message || ''}`;
+      statusEl.textContent = `현재 공지 중: ${noticeRangeText(data)} — ${data.message || ''}`;
     }else{
       statusEl.textContent = '현재 활성화된 공지가 없어요.';
     }
@@ -1330,10 +1347,12 @@
     noticeSaveBtn.addEventListener('click', async ()=>{
       const date = $('noticeDateInput').value;
       const time = $('noticeTimeInput').value;
+      const endDate = $('noticeEndDateInput').value;
+      const endTime = $('noticeEndTimeInput').value;
       const message = $('noticeMessageInput').value.trim();
       if(!message){ showToast('공지 내용을 입력해주세요', 'error'); return; }
       try{
-        await noticeDocRef().set({ date, time, message, active: true, updatedAt: Date.now() });
+        await noticeDocRef().set({ date, time, endDate, endTime, message, active: true, updatedAt: Date.now() });
         showToast('공지가 저장되었습니다');
       }catch(e){
         console.error(e);

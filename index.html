@@ -314,6 +314,10 @@
   ::-webkit-scrollbar{ width:6px; }
   ::-webkit-scrollbar-thumb{ background: var(--accent-pale); border-radius:10px; }
 
+  .notice-banner{
+    background: #fff4e0; border:1px solid #f4c968; color:#8a5a00; font-size:12.5px; font-weight:700;
+    line-height:1.5; padding:12px 14px; border-radius:14px; margin-bottom:16px;
+  }
   .toast{
     position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(16px);
     background: var(--text); color:#fff; font-size:13px; font-weight:600; padding:11px 20px;
@@ -413,6 +417,12 @@
     font-size:12px; font-weight:700; padding:6px 10px; border-radius:8px; cursor:pointer;
   }
   .cat-manage-header-actions button:disabled{ opacity:0.4; cursor:default; }
+  .notice-actions{ display:flex; gap:8px; }
+  .notice-actions .save-btn{ width:auto; padding:10px 16px; margin-top:0; flex:0 0 auto; }
+  .notice-actions .notice-clear-btn{
+    border:1.5px solid var(--expense-bg); background: var(--expense-bg); color: var(--expense);
+    font-size:13px; font-weight:700; padding:10px 16px; border-radius:10px; cursor:pointer;
+  }
   .cat-manage-list{ display:flex; flex-direction:column; gap:8px; }
   .cat-manage-item{
     display:flex; align-items:center; gap:10px;
@@ -446,6 +456,10 @@
     cursor:pointer; background: var(--income); color:#fff;
   }
   .member-item .member-actions{ display:flex; gap:6px; flex-shrink:0; }
+  .member-item .cancel-approve-btn{
+    flex-shrink:0; border:none; border-radius:8px; padding:7px 12px; font-size:12.5px; font-weight:700;
+    cursor:pointer; background: #fff4e0; color:#8a5a00;
+  }
   .member-item .remove-member-btn{
     flex-shrink:0; border:none; border-radius:8px; padding:7px 12px; font-size:12.5px; font-weight:700;
     cursor:pointer; background: var(--expense-bg); color: var(--expense);
@@ -633,6 +647,10 @@
 </div>
 
 <div class="wrap hidden" id="appRoot">
+
+  <div class="notice-banner hidden" id="noticeBanner">
+    <span id="noticeBannerText"></span>
+  </div>
 
   <!-- HOME PAGE -->
   <div class="page active-page" id="page-home">
@@ -841,7 +859,6 @@
         <label><input type="checkbox" id="catManageSelectAll">전체 선택</label>
         <div class="cat-manage-header-actions">
           <button type="button" id="catManageDeleteSelected" disabled>선택 삭제</button>
-          <button type="button" id="catManageDeleteAll">전체 삭제</button>
         </div>
       </div>
       <div class="cat-manage-list" id="catManageList"></div>
@@ -920,6 +937,28 @@
 
   <!-- ADMIN PAGE (qorgh7787@gmail.com only) -->
   <div class="page" id="page-admin">
+    <div class="card">
+      <h2><span class="dot"></span>시스템 점검 공지</h2>
+      <p class="backup-desc">저장하면 모든 사용자에게 즉시 공지 배너가 표시돼요.</p>
+      <div class="field">
+        <label>점검 날짜</label>
+        <input type="date" id="noticeDateInput">
+      </div>
+      <div class="field">
+        <label>점검 시간</label>
+        <input type="time" id="noticeTimeInput">
+      </div>
+      <div class="field">
+        <label>공지 내용</label>
+        <input type="text" id="noticeMessageInput" placeholder="예: 서버 점검으로 30분간 이용이 제한됩니다">
+      </div>
+      <div class="notice-actions">
+        <button type="button" class="save-btn" id="noticeSaveBtn">공지 저장</button>
+        <button type="button" class="notice-clear-btn" id="noticeClearBtn">공지 끄기</button>
+      </div>
+      <div class="backup-status-line" id="noticeStatusLine" style="margin-top:10px;">현재 활성화된 공지가 없어요.</div>
+    </div>
+
     <div class="card">
       <h2><span class="dot"></span>회원 관리</h2>
       <div class="backup-status-line" id="adminMemberCount">가입자 수: 0명</div>
@@ -1118,8 +1157,26 @@
   // ====== Member approval (회원 승인) ======
   let userDirectoryEntry = null;
   let allMembers = [];
+  let ownDirUnsubscribe = null;
 
   function userDirCol(){ return db.collection('userDirectory'); }
+
+  // Watches this user's own approval status so an admin-side cancel-approval
+  // kicks them back to the pending screen immediately, without waiting for a re-login.
+  function startOwnDirListener(uid){
+    stopOwnDirListener();
+    ownDirUnsubscribe = userDirCol().doc(uid).onSnapshot(snap=>{
+      const data = snap.data();
+      if(!data) return;
+      userDirectoryEntry = data;
+      if(!data.approved && $('appRoot') && !$('appRoot').classList.contains('hidden')){
+        showPendingScreenUI();
+      }
+    }, e => console.error('승인 상태 실시간 감시 실패', e));
+  }
+  function stopOwnDirListener(){
+    if(ownDirUnsubscribe){ ownDirUnsubscribe(); ownDirUnsubscribe = null; }
+  }
 
   async function ensureUserDirectoryEntry(user){
     const ref = userDirCol().doc(user.uid);
@@ -1161,6 +1218,7 @@
         </div>
         <div class="member-actions">
           ${!m.approved ? `<button type="button" class="approve-btn" data-uid="${m.uid}">✓ 승인</button>` : ''}
+          ${m.approved && m.email !== ADMIN_EMAIL ? `<button type="button" class="cancel-approve-btn" data-uid="${m.uid}">승인 취소</button>` : ''}
           ${m.email !== ADMIN_EMAIL ? `<button type="button" class="remove-member-btn" data-uid="${m.uid}">제거</button>` : ''}
         </div>
       </div>
@@ -1191,6 +1249,18 @@
     }
   }
 
+  async function cancelApproval(uid){
+    try{
+      await userDirCol().doc(uid).update({ approved: false });
+      await loadAllMembers();
+      renderAdminMembers();
+      showToast('승인을 취소했습니다');
+    }catch(e){
+      console.error(e);
+      showToast('승인 취소에 실패했어요', 'error');
+    }
+  }
+
   $('adminMemberList').addEventListener('click', (e)=>{
     const removeBtn = e.target.closest('.remove-member-btn');
     if(removeBtn){
@@ -1199,10 +1269,91 @@
       removeMember(removeBtn.dataset.uid);
       return;
     }
+    const cancelBtn = e.target.closest('.cancel-approve-btn');
+    if(cancelBtn){
+      const m = allMembers.find(x => x.uid === cancelBtn.dataset.uid);
+      if(!confirm(`'${m ? m.email : ''}' 회원의 승인을 취소하시겠습니까?\n승인 대기 상태로 돌아가며, 다시 승인 전까지 앱에 들어올 수 없어요.`)) return;
+      cancelApproval(cancelBtn.dataset.uid);
+      return;
+    }
     const btn = e.target.closest('.approve-btn');
     if(!btn) return;
     approveMember(btn.dataset.uid);
   });
+
+  // ====== System maintenance notice (어드민 시스템 점검 공지) ======
+  let noticeUnsubscribe = null;
+
+  function noticeDocRef(){ return db.collection('config').doc('notice'); }
+
+  function renderNoticeBanner(data){
+    const banner = $('noticeBanner');
+    const textEl = $('noticeBannerText');
+    if(!banner || !textEl) return;
+    if(data && data.active){
+      const when = [data.date, data.time].filter(Boolean).join(' ');
+      textEl.textContent = `⚠️ 시스템 점검 안내${when ? ' (' + when + ')' : ''}: ${data.message || ''}`;
+      banner.classList.remove('hidden');
+    }else{
+      banner.classList.add('hidden');
+    }
+  }
+
+  function renderNoticeAdminForm(data){
+    const statusEl = $('noticeStatusLine');
+    if(!statusEl) return;
+    if(!isAdmin()) return;
+    if(data && data.active){
+      $('noticeDateInput').value = data.date || '';
+      $('noticeTimeInput').value = data.time || '';
+      $('noticeMessageInput').value = data.message || '';
+      statusEl.textContent = `현재 공지 중: ${[data.date, data.time].filter(Boolean).join(' ')} — ${data.message || ''}`;
+    }else{
+      statusEl.textContent = '현재 활성화된 공지가 없어요.';
+    }
+  }
+
+  function startNoticeListener(){
+    stopNoticeListener();
+    noticeUnsubscribe = noticeDocRef().onSnapshot(snap=>{
+      const data = snap.exists ? snap.data() : null;
+      renderNoticeBanner(data);
+      renderNoticeAdminForm(data);
+    }, e => console.error('공지 실시간 갱신 실패', e));
+  }
+  function stopNoticeListener(){
+    if(noticeUnsubscribe){ noticeUnsubscribe(); noticeUnsubscribe = null; }
+  }
+
+  const noticeSaveBtn = $('noticeSaveBtn');
+  if(noticeSaveBtn){
+    noticeSaveBtn.addEventListener('click', async ()=>{
+      const date = $('noticeDateInput').value;
+      const time = $('noticeTimeInput').value;
+      const message = $('noticeMessageInput').value.trim();
+      if(!message){ showToast('공지 내용을 입력해주세요', 'error'); return; }
+      try{
+        await noticeDocRef().set({ date, time, message, active: true, updatedAt: Date.now() });
+        showToast('공지가 저장되었습니다');
+      }catch(e){
+        console.error(e);
+        showToast('공지 저장에 실패했어요', 'error');
+      }
+    });
+  }
+  const noticeClearBtn = $('noticeClearBtn');
+  if(noticeClearBtn){
+    noticeClearBtn.addEventListener('click', async ()=>{
+      if(!confirm('공지를 끄시겠습니까?\n사용자 화면에서 공지 배너가 사라져요.')) return;
+      try{
+        await noticeDocRef().set({ active: false, updatedAt: Date.now() }, { merge: true });
+        showToast('공지가 삭제되었습니다');
+      }catch(e){
+        console.error(e);
+        showToast('공지 삭제에 실패했어요', 'error');
+      }
+    });
+  }
 
   // ====== Inquiries (문의사항 / 어드민 답변) ======
   let myInquiries = [];
@@ -1228,6 +1379,7 @@
     if(isAdmin()){
       allInquiriesUnsubscribe = inquiriesCol().onSnapshot(snap=>{
         allInquiries = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .filter(q => !q.adminHidden) // admin-deleted inquiries stay in Firestore for the user, just hidden here
           .sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
         renderAdminInquiries();
       }, e => console.error('전체 문의 실시간 갱신 실패', e));
@@ -1346,8 +1498,9 @@
 
   async function adminDeleteInquiry(id){
     try{
-      await inquiriesCol().doc(id).delete();
-      showToast('삭제했어요 🗑️');
+      // soft-delete: only hide it from the admin list — the user's own inquiry stays intact
+      await inquiriesCol().doc(id).update({ adminHidden: true });
+      showToast('삭제했어요 🗑️ (사용자 계정에는 그대로 남아있어요)');
     }catch(e){
       console.error(e);
       showToast('삭제에 실패했어요', 'error');
@@ -1566,6 +1719,8 @@
       showApp();
       renderAll();
       startInquiriesListeners(); // live updates — new/answered inquiries show up without a manual refresh
+      startNoticeListener();
+      startOwnDirListener(user.uid); // detects an admin cancelling this account's approval in real time
       try{
         await Promise.all([
           loadFromCloud(user),
@@ -1589,10 +1744,13 @@
         currentUser = null;
         userDirectoryEntry = null;
         stopInquiriesListeners();
+        stopNoticeListener();
+        stopOwnDirListener();
         myInquiries = [];
         allInquiries = [];
         allMembers = [];
         selectedInquiryIds.clear();
+        $('noticeBanner')?.classList.add('hidden');
         showLoginScreenUI();
       }
     });
@@ -2030,7 +2188,6 @@
     selectAllChk.checked = selectableNames.length > 0 && selectedCatNames.size === selectableNames.length;
     selectAllChk.disabled = selectableNames.length === 0;
     $('catManageDeleteSelected').disabled = selectedCatNames.size === 0;
-    $('catManageDeleteAll').disabled = selectableNames.length === 0;
   }
 
   async function deleteCategories(type, names){
@@ -2454,14 +2611,6 @@
     await deleteCategories(state.catManageType, names);
   });
 
-  $('catManageDeleteAll').addEventListener('click', async ()=>{
-    const type = state.catManageType;
-    const other = otherLabelOf(type);
-    const names = (state.categories[type] || []).filter(n => n !== other);
-    if(names.length === 0) return;
-    if(!confirm(`'기본' 카테고리를 제외한 전체 카테고리(${names.length}개)를 삭제하시겠습니까?\n(이미 저장된 기록의 카테고리 이름은 그대로 남아있어요.)`)) return;
-    await deleteCategories(type, names);
-  });
   document.querySelectorAll('#catViewPeriodToggle button').forEach(b=>{
     b.addEventListener('click', ()=>{
       state.catViewPeriod = b.dataset.catperiod;

@@ -2027,12 +2027,14 @@
     let labels = [], incomeData = [], expenseData = [];
 
     if(state.currentPeriod === 'day'){
-      // last 7 days
-      for(let i=6;i>=0;i--){
-        const d = new Date();
-        d.setDate(d.getDate()-i);
+      // this week (Mon-Sun) — rolls over to next week automatically once Sunday turns into Monday
+      const now = new Date();
+      const dayOfWeek = (now.getDay()+6)%7; // 0=Mon
+      const monday = new Date(now); monday.setDate(now.getDate()-dayOfWeek);
+      for(let i=0;i<7;i++){
+        const d = new Date(monday); d.setDate(monday.getDate()+i);
         const key = d.toISOString().slice(0,10);
-        labels.push((d.getMonth()+1)+'/'+d.getDate());
+        labels.push((d.getMonth()+1)+'.'+d.getDate());
         let inc=0, exp=0;
         state.entries.forEach(e=>{ if(e.date === key){ if(e.type==='income') inc+=e.amount; else exp+=e.amount; }});
         incomeData.push(inc); expenseData.push(exp);
@@ -2049,7 +2051,7 @@
         weeks.push({start, end});
       }
       weeks.forEach(w=>{
-        labels.push((w.start.getMonth()+1)+'/'+w.start.getDate()+'~'+(w.end.getMonth()+1)+'/'+w.end.getDate());
+        labels.push((w.start.getMonth()+1)+'.'+w.start.getDate()+'~'+(w.end.getMonth()+1)+'.'+w.end.getDate());
         let inc=0, exp=0;
         state.entries.forEach(e=>{
           const d = new Date(e.date+'T00:00:00');
@@ -2058,10 +2060,11 @@
         incomeData.push(inc); expenseData.push(exp);
       });
     } else {
-      // last 6 months
+      // fixed half-year block (1~6월 or 7~12월) — rolls over to the next block once the half turns over
       const now = new Date();
-      for(let i=5;i>=0;i--){
-        const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      const half = now.getMonth() < 6 ? 0 : 6;
+      for(let i=0;i<6;i++){
+        const d = new Date(now.getFullYear(), half+i, 1);
         const ym = d.toISOString().slice(0,7);
         labels.push((d.getMonth()+1)+'월');
         let inc=0, exp=0;

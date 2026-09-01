@@ -218,10 +218,10 @@
   .record-item.expense .badge{ background: var(--expense-bg); color: var(--expense); }
   .record-item .info{ flex:1 1 auto; min-width:0; padding-top:3px; }
   .record-item .info .cat{
-    font-size:14px; font-weight:700; white-space:normal; overflow-wrap:break-word; word-break:keep-all; line-height:1.4;
+    font-size:16px; font-weight:700; white-space:normal; overflow-wrap:break-word; word-break:keep-all; line-height:1.4;
   }
   .record-item .amt{
-    font-size:14px; font-weight:800; white-space:nowrap; flex-shrink:0; padding-top:3px;
+    font-size:16px; font-weight:800; white-space:nowrap; flex-shrink:0; padding-top:3px;
   }
   .record-item.income .amt{ color: var(--income); }
   .record-item.expense .amt{ color: var(--expense); }
@@ -252,7 +252,7 @@
   .empty-msg{ text-align:center; color: var(--text-soft); font-size:13px; padding: 26px 0; }
   .date-group{ margin-top:14px; }
   .date-group:first-child{ margin-top:0; }
-  .date-group-header{ font-size:12px; font-weight:700; color: var(--text-soft); margin-bottom:6px; padding-left:2px; }
+  .date-group-header{ font-size:14px; font-weight:700; color: var(--text-soft); margin-bottom:6px; padding-left:2px; }
 
   /* Calendar */
   .cal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
@@ -296,7 +296,7 @@
     padding:8px 0; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer;
   }
   .period-toggle button.active{ background: var(--accent); border-color: var(--accent); color:#fff; }
-  .chart-wrap{ position:relative; height:230px; }
+  .chart-wrap{ position:relative; height:320px; }
   .legend-row{ display:flex; gap:16px; justify-content:center; margin-top:10px; font-size:12px; color:var(--text-soft);}
   .legend-row span{ display:inline-flex; align-items:center; gap:5px;}
   .legend-row i{ width:9px; height:9px; border-radius:3px; display:inline-block;}
@@ -1094,10 +1094,13 @@
 
   const $ = (id) => document.getElementById(id);
   const fmt = (n) => n.toLocaleString('ko-KR') + '원';
-  const todayStr = () => {
-    const d = new Date();
-    return d.toISOString().slice(0,10);
+  const toDateStr = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
   };
+  const todayStr = () => toDateStr(new Date());
 
   let toastTimer = null;
   function showToast(msg, type){
@@ -1861,7 +1864,7 @@
     $('balanceNum').textContent = fmt(balance);
 
     const now = new Date();
-    const ym = now.toISOString().slice(0,7);
+    const ym = toDateStr(now).slice(0,7);
     let mIncome = 0, mExpense = 0;
     state.entries.forEach(e => {
       if(e.date.slice(0,7) === ym){
@@ -2033,7 +2036,7 @@
       const monday = new Date(now); monday.setDate(now.getDate()-dayOfWeek);
       for(let i=0;i<7;i++){
         const d = new Date(monday); d.setDate(monday.getDate()+i);
-        const key = d.toISOString().slice(0,10);
+        const key = toDateStr(d);
         labels.push((d.getMonth()+1)+'.'+d.getDate());
         let inc=0, exp=0;
         state.entries.forEach(e=>{ if(e.date === key){ if(e.type==='income') inc+=e.amount; else exp+=e.amount; }});
@@ -2051,7 +2054,8 @@
         weeks.push({start, end});
       }
       weeks.forEach(w=>{
-        labels.push((w.start.getMonth()+1)+'.'+w.start.getDate()+'~'+(w.end.getMonth()+1)+'.'+w.end.getDate());
+        const weekOfMonth = Math.ceil(w.end.getDate()/7);
+        labels.push((w.end.getMonth()+1)+'월 '+weekOfMonth+'주');
         let inc=0, exp=0;
         state.entries.forEach(e=>{
           const d = new Date(e.date+'T00:00:00');
@@ -2065,7 +2069,7 @@
       const half = now.getMonth() < 6 ? 0 : 6;
       for(let i=0;i<6;i++){
         const d = new Date(now.getFullYear(), half+i, 1);
-        const ym = d.toISOString().slice(0,7);
+        const ym = toDateStr(d).slice(0,7);
         labels.push((d.getMonth()+1)+'월');
         let inc=0, exp=0;
         state.entries.forEach(e=>{ if(e.date.slice(0,7) === ym){ if(e.type==='income') inc+=e.amount; else exp+=e.amount; }});

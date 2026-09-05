@@ -179,6 +179,9 @@
   .new-cat-row button{
     border:none; background: var(--accent-deep); color:#fff; border-radius:10px; padding:0 14px; font-size:13px; font-weight:700; cursor:pointer;
   }
+  .new-card-type-select{
+    flex:0 0 auto; width:92px; border-radius:10px; border:1.5px solid var(--line); font-size:12.5px; padding:0 4px;
+  }
 
   .save-btn{
     width:100%; padding:13px; border:none; border-radius:12px; font-size:15px; font-weight:700;
@@ -445,6 +448,11 @@
     font-size:11px; color: var(--text-soft); font-weight:600; background: var(--accent-pale);
     padding:3px 8px; border-radius:8px; flex-shrink:0;
   }
+  .card-type-badge{
+    font-size:11px; font-weight:600; color: var(--accent-deep); background: var(--accent-pale);
+    padding:3px 8px; border-radius:8px; flex-shrink:0; border:none; cursor:pointer;
+  }
+  .card-type-badge:hover{ background: var(--accent); color:#fff; }
   .cat-manage-item .edit-cat-btn, .cat-manage-item .del-cat-btn{
     border:none; background:none; color:#b9cbd4; font-size:15px; cursor:pointer; padding:2px 6px; flex-shrink:0;
   }
@@ -692,7 +700,7 @@
       <h1>나만의 가계부</h1>
       <div class="balance-row home-link" id="balanceRow" title="눌러서 잔액 조정하기">
         <div>
-          <div class="label">현재 잔액 (현금) ✏️</div>
+          <div class="label">현재 잔액 (현금·체크카드) ✏️</div>
           <div class="balance-num" id="balanceNum">0원</div>
         </div>
       </div>
@@ -867,6 +875,10 @@
         </div>
         <div class="new-cat-row" id="newCardRow">
           <input type="text" id="newCardInput" placeholder="새 카드 이름 입력">
+          <select id="newCardTypeSelect" class="new-card-type-select">
+            <option value="credit">신용카드</option>
+            <option value="debit">체크카드</option>
+          </select>
           <button type="button" id="newCardSave">추가</button>
         </div>
       </div>
@@ -911,7 +923,7 @@
     <!-- Card management -->
     <div class="card">
       <h2><span class="dot"></span>카드 관리</h2>
-      <p class="backup-desc">여기서 카드를 먼저 등록해두면, 기록 추가할 때 목록에서 골라 쓸 수 있어요.</p>
+      <p class="backup-desc">여기서 카드를 먼저 등록해두면, 기록 추가할 때 목록에서 골라 쓸 수 있어요. 체크카드는 현금처럼 바로 통장에서 빠져나가서 "현재 잔액"에 반영되고, 신용카드는 나중에 청구되는 돈이라 잔액에서 제외돼요 — 카드 옆 배지를 눌러 유형을 바꿀 수 있어요.</p>
       <div class="cat-manage-header">
         <label><input type="checkbox" id="cardManageSelectAll">전체 선택</label>
         <div class="cat-manage-header-actions">
@@ -1206,6 +1218,13 @@
       const raw4 = localStorage.getItem(CARDS_KEY);
       if(raw4) state.cards = JSON.parse(raw4);
     }catch(e){ /* keep defaults */ }
+    normalizeCards();
+  }
+
+  // Cards used to be stored as plain name strings before 신용/체크 card types existed —
+  // upgrade any leftover old-format entries in place so nothing crashes on `.name`/`.type`.
+  function normalizeCards(){
+    state.cards = (state.cards || []).map(c => typeof c === 'string' ? { name: c, type: 'credit' } : c);
   }
 
   async function saveEntries(){
@@ -1270,6 +1289,7 @@
       state.categories = data.categories || JSON.parse(JSON.stringify(defaultCats));
       state.budgets = data.budgets || {};
       state.cards = Array.isArray(data.cards) ? data.cards : [];
+      normalizeCards();
     }else{
       // first login on this account — upload whatever is on this device so nothing gets lost
       await ref.set({ entries: state.entries, categories: state.categories, budgets: state.budgets, cards: state.cards });
@@ -1972,7 +1992,12 @@
 
   // 카드 결제는 지금 당장 통장/현금이 빠져나가는 게 아니라 나중에 한 번에 청구되는 돈이라,
   // "현재 잔액"은 현금(카드가 아닌) 기록만으로 계산한다. 카드 사용액은 카드/현금 요약 쪽에서 따로 확인.
-  const isCashEntry = (e) => e.paymentMethod !== 'card';
+  const isCashEntry = (e) => {
+    if(e.paymentMethod !== 'card') return true;
+    const card = state.cards.find(c => c.name === e.cardName);
+    // 체크카드는 통장에서 바로 빠져나가니 현금과 동일하게 취급하고, 신용카드(또는 유형을 알 수 없는 카드)는 제외한다.
+    return !!card && card.type === 'debit';
+  };
 
   function renderSummary(){
     let balance = 0;
@@ -2017,12 +2042,23 @@
     if(catEl) catEl.innerHTML = html;
   }
 
+  const cardTypeLabel = (type) => type === 'debit' ? '체크카드' : '신용카드';
+
+  // What the 기록 보기 pm-tag should read for one entry — plain "현금"/"카드" when there's no
+  // card name on record, otherwise the card's name plus its 신용/체크 classification.
+  function pmTagLabel(e){
+    if(e.paymentMethod !== 'card') return PAYMENT_METHOD_LABELS[e.paymentMethod] || e.paymentMethod;
+    if(!e.cardName) return PAYMENT_METHOD_LABELS.card;
+    const card = state.cards.find(c => c.name === e.cardName);
+    return card ? `${e.cardName} · ${cardTypeLabel(card.type)}` : e.cardName;
+  }
+
   function renderCardNameSelect(){
     const sel = $('cardNameSelect');
     if(!sel) return;
     const prev = sel.value;
-    sel.innerHTML = state.cards.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-    if(state.cards.includes(prev)) sel.value = prev;
+    sel.innerHTML = state.cards.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)} (${cardTypeLabel(c.type)})</option>`).join('');
+    if(state.cards.some(c => c.name === prev)) sel.value = prev;
   }
 
   let selectedCardNames = new Set();
@@ -2031,17 +2067,19 @@
     const listEl = $('cardManageList');
     if(!listEl) return;
     const list = state.cards;
-    selectedCardNames.forEach(n => { if(!list.includes(n)) selectedCardNames.delete(n); });
+    const names = list.map(c => c.name);
+    selectedCardNames.forEach(n => { if(!names.includes(n)) selectedCardNames.delete(n); });
 
     if(list.length === 0){
       listEl.innerHTML = '<div class="cat-manage-empty">등록된 카드가 없어요.</div>';
     } else {
-      listEl.innerHTML = list.map(name => `
-        <div class="cat-manage-item" data-card-name="${escapeHtml(name)}">
-          <input type="checkbox" class="card-manage-chk" data-card-name="${escapeHtml(name)}" ${selectedCardNames.has(name) ? 'checked' : ''}>
-          <span class="name">${escapeHtml(name)}</span>
-          <button type="button" class="edit-card-btn" data-card-name="${escapeHtml(name)}" title="수정">✏️</button>
-          <button type="button" class="del-card-btn" data-card-name="${escapeHtml(name)}" title="삭제">✕</button>
+      listEl.innerHTML = list.map(card => `
+        <div class="cat-manage-item" data-card-name="${escapeHtml(card.name)}">
+          <input type="checkbox" class="card-manage-chk" data-card-name="${escapeHtml(card.name)}" ${selectedCardNames.has(card.name) ? 'checked' : ''}>
+          <span class="name">${escapeHtml(card.name)}</span>
+          <button type="button" class="card-type-badge" data-card-name="${escapeHtml(card.name)}" title="눌러서 카드 유형 변경">${cardTypeLabel(card.type)}</button>
+          <button type="button" class="edit-card-btn" data-card-name="${escapeHtml(card.name)}" title="수정">✏️</button>
+          <button type="button" class="del-card-btn" data-card-name="${escapeHtml(card.name)}" title="삭제">✕</button>
         </div>
       `).join('');
     }
@@ -2052,9 +2090,9 @@
     $('cardManageDeleteSelected').disabled = selectedCardNames.size === 0;
   }
 
-  async function addCard(name){
-    if(state.cards.includes(name)){ showToast('이미 있는 카드예요', 'error'); return; }
-    state.cards.push(name);
+  async function addCard(name, type){
+    if(state.cards.some(c => c.name === name)){ showToast('이미 있는 카드예요', 'error'); return; }
+    state.cards.push({ name, type: type === 'debit' ? 'debit' : 'credit' });
     const ok = await saveCards();
     if(ok){
       renderCardNameSelect();
@@ -2067,7 +2105,7 @@
   async function deleteCards(names){
     if(names.length === 0) return;
     const nameSet = new Set(names);
-    state.cards = state.cards.filter(c => !nameSet.has(c));
+    state.cards = state.cards.filter(c => !nameSet.has(c.name));
     selectedCardNames.clear();
     const ok = await saveCards();
     if(ok){
@@ -2078,14 +2116,14 @@
   }
 
   async function renameCard(oldName, newName){
-    if(state.cards.includes(newName)){
+    if(state.cards.some(c => c.name === newName)){
       showToast('이미 있는 카드 이름이에요', 'error');
       renderCardManageList();
       return;
     }
-    const idx = state.cards.indexOf(oldName);
-    if(idx === -1) return;
-    state.cards[idx] = newName;
+    const card = state.cards.find(c => c.name === oldName);
+    if(!card) return;
+    card.name = newName;
     // keep existing records pointing at their (renamed) card
     state.entries.forEach(e => { if(e.cardName === oldName) e.cardName = newName; });
 
@@ -2096,6 +2134,19 @@
       renderList();
       renderCardManageList();
       showToast('카드를 수정했어요');
+    }
+  }
+
+  async function toggleCardType(name){
+    const card = state.cards.find(c => c.name === name);
+    if(!card) return;
+    card.type = card.type === 'debit' ? 'credit' : 'debit';
+    const ok = await saveCards();
+    if(ok){
+      renderCardManageList();
+      renderCardNameSelect();
+      renderSummary(); // 현재 잔액(현금)은 카드 유형에 따라 포함 여부가 갈리니 바로 다시 계산
+      showToast(`${name}을(를) ${cardTypeLabel(card.type)}로 바꿨어요`);
     }
   }
 
@@ -2238,7 +2289,7 @@
               <input type="checkbox" class="chk" data-id="${e.id}" ${state.selectedIds.has(e.id) ? 'checked' : ''}>
               <div class="badge">${e.type === 'income' ? '수' : '지'}</div>
               <div class="info">
-                <div class="cat">${escapeHtml(e.category)}${e.memo ? ' · ' + escapeHtml(e.memo) : ''}${e.paymentMethod ? `<span class="pm-tag">${e.paymentMethod === 'card' && e.cardName ? escapeHtml(e.cardName) : (PAYMENT_METHOD_LABELS[e.paymentMethod] || e.paymentMethod)}</span>` : ''}</div>
+                <div class="cat">${escapeHtml(e.category)}${e.memo ? ' · ' + escapeHtml(e.memo) : ''}${e.paymentMethod ? `<span class="pm-tag">${escapeHtml(pmTagLabel(e))}</span>` : ''}</div>
               </div>
               <div class="amt">${e.type === 'income' ? '+' : '-'}${e.amount.toLocaleString('ko-KR')}원</div>
             </div>
@@ -2892,7 +2943,7 @@
     let currentBalance = 0;
     state.entries.forEach(e => { if(isCashEntry(e)) currentBalance += (e.type === 'income' ? e.amount : -e.amount); });
 
-    const input = prompt('현재 잔액(현금)을 얼마로 맞출까요? (원)', currentBalance);
+    const input = prompt('현재 잔액(현금·체크카드)을 얼마로 맞출까요? (원)', currentBalance);
     if(input === null) return;
     const target = Number(String(input).replace(/[^0-9-]/g,''));
     if(!Number.isFinite(target)){ alert('숫자를 입력해주세요.'); return; }
@@ -3020,6 +3071,12 @@
   });
 
   $('cardManageList').addEventListener('click', async (e)=>{
+    const typeBadge = e.target.closest('.card-type-badge');
+    if(typeBadge){
+      await toggleCardType(typeBadge.dataset.cardName);
+      return;
+    }
+
     const delBtn = e.target.closest('.del-card-btn');
     if(delBtn){
       const name = delBtn.dataset.cardName;
@@ -3066,7 +3123,7 @@
   });
 
   $('cardManageSelectAll').addEventListener('change', (e)=>{
-    if(e.target.checked) selectedCardNames = new Set(state.cards);
+    if(e.target.checked) selectedCardNames = new Set(state.cards.map(c => c.name));
     else selectedCardNames.clear();
     renderCardManageList();
   });
@@ -3149,8 +3206,10 @@
   $('newCardSave').addEventListener('click', async ()=>{
     const val = $('newCardInput').value.trim();
     if(!val) return;
-    await addCard(val);
+    const type = $('newCardTypeSelect').value;
+    await addCard(val, type);
     $('newCardInput').value = '';
+    $('newCardTypeSelect').value = 'credit';
     $('newCardRow').classList.remove('show');
   });
 
@@ -3175,8 +3234,9 @@
     $('memoInput').value = entry.memo || '';
     setPaymentMethod(entry.paymentMethod || 'cash');
     // make sure the entry's card shows up in the dropdown even if it was since renamed/removed
-    if(entry.cardName && !state.cards.includes(entry.cardName)){
-      state.cards.push(entry.cardName);
+    // (type defaults to 신용카드 since we no longer know the original — user can fix it in 카드 관리)
+    if(entry.cardName && !state.cards.some(c => c.name === entry.cardName)){
+      state.cards.push({ name: entry.cardName, type: 'credit' });
       renderCardNameSelect();
     }
     if(entry.cardName) $('cardNameSelect').value = entry.cardName;

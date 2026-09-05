@@ -692,7 +692,7 @@
       <h1>나만의 가계부</h1>
       <div class="balance-row home-link" id="balanceRow" title="눌러서 잔액 조정하기">
         <div>
-          <div class="label">현재 잔액 ✏️</div>
+          <div class="label">현재 잔액 (현금) ✏️</div>
           <div class="balance-num" id="balanceNum">0원</div>
         </div>
       </div>
@@ -1970,9 +1970,13 @@
     renderChart();
   }
 
+  // 카드 결제는 지금 당장 통장/현금이 빠져나가는 게 아니라 나중에 한 번에 청구되는 돈이라,
+  // "현재 잔액"은 현금(카드가 아닌) 기록만으로 계산한다. 카드 사용액은 카드/현금 요약 쪽에서 따로 확인.
+  const isCashEntry = (e) => e.paymentMethod !== 'card';
+
   function renderSummary(){
     let balance = 0;
-    state.entries.forEach(e => balance += (e.type === 'income' ? e.amount : -e.amount));
+    state.entries.forEach(e => { if(isCashEntry(e)) balance += (e.type === 'income' ? e.amount : -e.amount); });
     $('balanceNum').textContent = fmt(balance);
 
     // 잔액 조정 기록은 잔액 계산에는 반드시 포함하되(그래야 잔액이 사용자가 맞춘 숫자와 일치),
@@ -2886,9 +2890,9 @@
   // equal to the sum of entries, and the adjustment itself shows up in records/graphs like any other.
   async function adjustBalance(){
     let currentBalance = 0;
-    state.entries.forEach(e => currentBalance += (e.type === 'income' ? e.amount : -e.amount));
+    state.entries.forEach(e => { if(isCashEntry(e)) currentBalance += (e.type === 'income' ? e.amount : -e.amount); });
 
-    const input = prompt('현재 잔액을 얼마로 맞출까요? (원)', currentBalance);
+    const input = prompt('현재 잔액(현금)을 얼마로 맞출까요? (원)', currentBalance);
     if(input === null) return;
     const target = Number(String(input).replace(/[^0-9-]/g,''));
     if(!Number.isFinite(target)){ alert('숫자를 입력해주세요.'); return; }

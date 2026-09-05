@@ -110,6 +110,7 @@
   }
   .mini-stat .l{ font-size:11px; opacity:0.85; }
   .mini-stat .v{ font-size:15px; font-weight:700; margin-top:2px; }
+  .home-link{ cursor:pointer; }
 
   .install-btn{
     display:none; align-items:center; gap:6px; position:absolute; top:18px; right:18px; z-index:2;
@@ -216,12 +217,12 @@
   }
   .record-item.income .badge{ background: var(--income-bg); color: var(--income); }
   .record-item.expense .badge{ background: var(--expense-bg); color: var(--expense); }
-  .record-item .info{ flex:1 1 auto; min-width:0; padding-top:3px; }
+  .record-item .info{ flex:1 1 auto; min-width:0; padding-top:3px; cursor:pointer; }
   .record-item .info .cat{
     font-size:16px; font-weight:700; white-space:normal; overflow-wrap:break-word; word-break:keep-all; line-height:1.4;
   }
   .record-item .amt{
-    font-size:16px; font-weight:800; white-space:nowrap; flex-shrink:0; padding-top:3px;
+    font-size:16px; font-weight:800; white-space:nowrap; flex-shrink:0; padding-top:3px; cursor:pointer;
   }
   .record-item.income .amt{ color: var(--income); }
   .record-item.expense .amt{ color: var(--expense); }
@@ -297,6 +298,12 @@
   }
   .period-toggle button.active{ background: var(--accent); border-color: var(--accent); color:#fff; }
   .chart-wrap{ position:relative; height:320px; }
+  .pm-breakdown{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px; }
+  .pm-stat{ background: var(--card-soft); border-radius:12px; padding:10px 12px; }
+  .pm-stat .l{ font-size:11px; color: var(--text-soft); font-weight:600; }
+  .pm-stat .v{ font-size:15px; font-weight:800; margin-top:2px; }
+  .pm-stat .v.income{ color: var(--income); }
+  .pm-stat .v.expense{ color: var(--expense); }
   .legend-row{ display:flex; gap:16px; justify-content:center; margin-top:10px; font-size:12px; color:var(--text-soft);}
   .legend-row span{ display:inline-flex; align-items:center; gap:5px;}
   .legend-row i{ width:9px; height:9px; border-radius:3px; display:inline-block;}
@@ -444,6 +451,29 @@
   .cat-manage-item .edit-cat-btn:hover{ color: var(--accent-deep); }
   .cat-manage-item .del-cat-btn:hover{ color: var(--expense); }
   .cat-manage-empty{ text-align:center; color: var(--text-soft); font-size:12.5px; padding:16px 0; }
+
+  .budget-list{ display:flex; flex-direction:column; gap:10px; }
+  .budget-item{ padding:11px 12px; border-radius:10px; background: var(--card-soft); }
+  .budget-item-top{ display:flex; align-items:center; gap:10px; }
+  .budget-cat-name{ font-size:14px; font-weight:600; color: var(--text); flex:1; min-width:0; overflow-wrap:anywhere; }
+  .budget-input{
+    width:110px; flex-shrink:0; padding:6px 8px; font-size:13.5px; text-align:right;
+    border-radius:7px; border:1.5px solid var(--accent-pale);
+  }
+  .budget-bar{ height:6px; border-radius:4px; background: var(--line); margin-top:8px; overflow:hidden; }
+  .budget-bar-fill{ height:100%; border-radius:4px; background: var(--accent); }
+  .budget-bar-fill.over{ background: var(--expense); }
+  .budget-status{ font-size:11.5px; color: var(--text-soft); margin-top:5px; }
+  .budget-status.over{ color: var(--expense); font-weight:700; }
+  .budget-pm-split{ font-size:11px; color: var(--text-soft); margin-top:2px; }
+
+  .pm-filter-row{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .pm-filter-row label{ font-size:12.5px; color: var(--text-soft); font-weight:600; }
+  .pm-filter-select{
+    flex:1; padding:7px 9px; font-size:13px; border-radius:8px; border:1.5px solid var(--line);
+    background:#fff; color: var(--text);
+  }
+  .pm-filter-select:focus{ outline:none; border-color: var(--accent); }
 
   /* Admin: member management */
   .member-item{
@@ -660,15 +690,15 @@
       <button type="button" class="install-btn" id="installBtn">📲 앱 설치하기</button>
       <div class="eyebrow">MY LEDGER · 나만의 통장</div>
       <h1>나만의 가계부</h1>
-      <div class="balance-row">
+      <div class="balance-row home-link" id="balanceRow" title="눌러서 잔액 조정하기">
         <div>
-          <div class="label">현재 잔액</div>
+          <div class="label">현재 잔액 ✏️</div>
           <div class="balance-num" id="balanceNum">0원</div>
         </div>
       </div>
       <div class="mini-stats">
-        <div class="mini-stat"><div class="l">이번 달 수입</div><div class="v" id="monthIncome">0원</div></div>
-        <div class="mini-stat"><div class="l">이번 달 지출</div><div class="v" id="monthExpense">0원</div></div>
+        <div class="mini-stat home-link" id="statMonthIncome"><div class="l">이번 달 수입</div><div class="v" id="monthIncome">0원</div></div>
+        <div class="mini-stat home-link" id="statMonthExpense"><div class="l">이번 달 지출</div><div class="v" id="monthExpense">0원</div></div>
       </div>
     </div>
 
@@ -829,6 +859,12 @@
         </div>
       </div>
 
+      <div class="field hidden" id="cardNameField">
+        <label>카드 이름</label>
+        <input type="text" id="cardNameInput" placeholder="예: 신한카드, 삼성카드" list="cardNameDatalist">
+        <datalist id="cardNameDatalist"></datalist>
+      </div>
+
       <div class="field">
         <label>금액</label>
         <div class="amount-row">
@@ -864,6 +900,13 @@
         </div>
       </div>
       <div class="cat-manage-list" id="catManageList"></div>
+    </div>
+
+    <!-- Category budgets -->
+    <div class="card">
+      <h2><span class="dot"></span>카테고리별 예산</h2>
+      <p class="backup-desc">지출 카테고리마다 이번 달 한도를 정해두면, 기록을 추가할 때 한도에 가까워지거나 넘으면 바로 알려드려요. 한도는 달마다 새로 입력해야 해요 — 달이 바뀌면 빈칸으로 초기화돼요.</p>
+      <div class="budget-list" id="budgetList"></div>
     </div>
   </div>
 
@@ -907,6 +950,11 @@
     <div class="sub-page" id="subpage-chart">
       <div class="card">
         <h2><span class="dot"></span>그래프로 보기</h2>
+        <div class="pm-breakdown" id="pmBreakdownChart"></div>
+        <div class="pm-filter-row">
+          <label for="pmFilterChart">결제수단</label>
+          <select id="pmFilterChart" class="pm-filter-select"></select>
+        </div>
         <div class="period-toggle" id="graphPeriodToggle">
           <button data-period="day" class="active">일간</button>
           <button data-period="week">주간</button>
@@ -923,6 +971,11 @@
     <div class="sub-page" id="subpage-category">
       <div class="card">
         <h2><span class="dot"></span>카테고리별 보기</h2>
+        <div class="pm-breakdown" id="pmBreakdownCategory"></div>
+        <div class="pm-filter-row">
+          <label for="pmFilterCategory">결제수단</label>
+          <select id="pmFilterCategory" class="pm-filter-select"></select>
+        </div>
         <div class="type-toggle" id="catViewTypeToggle">
           <button data-type="income" class="active">수입</button>
           <button data-type="expense">지출</button>
@@ -1040,6 +1093,7 @@
 (function(){
   const STORAGE_KEY = 'yeongseon_ledger_entries';
   const CAT_KEY = 'yeongseon_ledger_categories';
+  const BUDGET_KEY = 'yeongseon_ledger_budgets';
   const LAST_EXPORT_KEY = 'yeongseon_ledger_last_export_at';
   const LIST_FILTER_KEY = 'yeongseon_ledger_list_filter';
   const LIST_FILTER_ALL = '__ALL__';
@@ -1080,6 +1134,7 @@
   let state = {
     entries: [],
     categories: JSON.parse(JSON.stringify(defaultCats)),
+    budgets: {},
     currentType: 'income',
     currentPaymentMethod: 'cash',
     currentPeriod: 'day',
@@ -1089,7 +1144,8 @@
     editingId: null,
     catViewType: 'income',
     catViewPeriod: 'month',
-    catManageType: 'income'
+    catManageType: 'income',
+    pmFilter: 'all'
   };
 
   const $ = (id) => document.getElementById(id);
@@ -1121,6 +1177,10 @@
       const raw2 = localStorage.getItem(CAT_KEY);
       if(raw2) state.categories = JSON.parse(raw2);
     }catch(e){ /* keep defaults */ }
+    try{
+      const raw3 = localStorage.getItem(BUDGET_KEY);
+      if(raw3) state.budgets = JSON.parse(raw3);
+    }catch(e){ /* keep defaults */ }
   }
 
   async function saveEntries(){
@@ -1145,12 +1205,23 @@
       return false;
     }
   }
+  async function saveBudgets(){
+    try{
+      localStorage.setItem(BUDGET_KEY, JSON.stringify(state.budgets));
+      syncToCloud();
+      return true;
+    }catch(e){
+      console.error('save budgets failed', e);
+      showToast('저장 실패: 이 브라우저에서 저장 공간을 사용할 수 없어요', 'error');
+      return false;
+    }
+  }
 
   // ====== Cloud sync (Firebase Auth + Firestore) ======
   function syncToCloud(){
     if(!firebaseEnabled || !currentUser) return;
     db.collection('users').doc(currentUser.uid)
-      .set({ entries: state.entries, categories: state.categories })
+      .set({ entries: state.entries, categories: state.categories, budgets: state.budgets })
       .catch(err => { console.error('클라우드 저장 실패', err); showToast('클라우드 저장에 실패했어요', 'error'); });
   }
 
@@ -1161,13 +1232,15 @@
       const data = snap.data();
       state.entries = Array.isArray(data.entries) ? data.entries : [];
       state.categories = data.categories || JSON.parse(JSON.stringify(defaultCats));
+      state.budgets = data.budgets || {};
     }else{
       // first login on this account — upload whatever is on this device so nothing gets lost
-      await ref.set({ entries: state.entries, categories: state.categories });
+      await ref.set({ entries: state.entries, categories: state.categories, budgets: state.budgets });
     }
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
       localStorage.setItem(CAT_KEY, JSON.stringify(state.categories));
+      localStorage.setItem(BUDGET_KEY, JSON.stringify(state.budgets));
     }catch(e){ /* not critical — Firestore is the source of truth once logged in */ }
   }
 
@@ -1845,6 +1918,8 @@
     document.querySelectorAll('#paymentMethodToggle button').forEach(b=>{
       b.classList.toggle('active', b.dataset.pm === pm);
     });
+    $('cardNameField').classList.toggle('hidden', pm !== 'card');
+    if(pm !== 'card') $('cardNameInput').value = '';
   }
   document.querySelectorAll('#paymentMethodToggle button').forEach(b=>{
     b.addEventListener('click', ()=> setPaymentMethod(b.dataset.pm));
@@ -1873,6 +1948,129 @@
     });
     $('monthIncome').textContent = fmt(mIncome);
     $('monthExpense').textContent = fmt(mExpense);
+  }
+
+  function renderPaymentBreakdown(){
+    const chartEl = $('pmBreakdownChart');
+    const catEl = $('pmBreakdownCategory');
+    if(!chartEl && !catEl) return;
+
+    const ym = todayStr().slice(0,7);
+    let cardIncome=0, cardExpense=0, cashIncome=0, cashExpense=0;
+    state.entries.forEach(e=>{
+      if(e.date.slice(0,7) !== ym) return;
+      const isCard = e.paymentMethod === 'card';
+      if(e.type === 'income'){ if(isCard) cardIncome += e.amount; else cashIncome += e.amount; }
+      else { if(isCard) cardExpense += e.amount; else cashExpense += e.amount; }
+    });
+
+    const html = `
+      <div class="pm-stat"><div class="l">카드 수입</div><div class="v income">${fmt(cardIncome)}</div></div>
+      <div class="pm-stat"><div class="l">카드 지출</div><div class="v expense">${fmt(cardExpense)}</div></div>
+      <div class="pm-stat"><div class="l">현금 수입</div><div class="v income">${fmt(cashIncome)}</div></div>
+      <div class="pm-stat"><div class="l">현금 지출</div><div class="v expense">${fmt(cashExpense)}</div></div>
+    `;
+    if(chartEl) chartEl.innerHTML = html;
+    if(catEl) catEl.innerHTML = html;
+  }
+
+  function renderCardNameOptions(){
+    const namesEl = $('cardNameDatalist');
+    if(!namesEl) return;
+    const names = new Set();
+    state.entries.forEach(e => { if(e.cardName) names.add(e.cardName); });
+    namesEl.innerHTML = [...names].map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+  }
+
+  // Whether an entry belongs under the currently selected 그래프/카테고리별 보기 결제수단 필터
+  // ('all', 'cash', a specific card name, or '__card_unnamed__' for card entries with no name set).
+  function matchesPmFilter(e){
+    const f = state.pmFilter;
+    if(!f || f === 'all') return true;
+    if(f === 'cash') return e.paymentMethod !== 'card';
+    if(f === '__card_unnamed__') return e.paymentMethod === 'card' && !e.cardName;
+    return e.paymentMethod === 'card' && e.cardName === f;
+  }
+
+  function renderPmFilterOptions(){
+    const chartEl = $('pmFilterChart');
+    const catEl = $('pmFilterCategory');
+    if(!chartEl && !catEl) return;
+
+    const names = new Set();
+    let hasUnnamedCard = false;
+    state.entries.forEach(e=>{
+      if(e.paymentMethod === 'card'){
+        if(e.cardName) names.add(e.cardName);
+        else hasUnnamedCard = true;
+      }
+    });
+    const opts = [{ value:'all', label:'전체' }, { value:'cash', label:'현금' }];
+    [...names].sort().forEach(n => opts.push({ value:n, label:n }));
+    if(hasUnnamedCard) opts.push({ value:'__card_unnamed__', label:'카드(이름 없음)' });
+
+    if(!opts.some(o => o.value === state.pmFilter)) state.pmFilter = 'all';
+    const optionsHtml = opts.map(o => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join('');
+    [chartEl, catEl].forEach(el=>{
+      if(!el) return;
+      el.innerHTML = optionsHtml;
+      el.value = state.pmFilter;
+    });
+  }
+
+  function renderBudgetList(){
+    const listEl = $('budgetList');
+    if(!listEl) return;
+
+    const cats = state.categories.expense || [];
+    if(cats.length === 0){
+      listEl.innerHTML = '<div class="cat-manage-empty">지출 카테고리를 먼저 추가해주세요.</div>';
+      return;
+    }
+
+    const ym = todayStr().slice(0,7);
+    const monthBudgets = state.budgets[ym] || {};
+    const spend = {}, spendCard = {}, spendCash = {}, spendByCardName = {};
+    state.entries.forEach(e=>{
+      if(e.type === 'expense' && e.date.slice(0,7) === ym){
+        spend[e.category] = (spend[e.category] || 0) + e.amount;
+        if(e.paymentMethod === 'card'){
+          spendCard[e.category] = (spendCard[e.category] || 0) + e.amount;
+          const name = e.cardName || '이름 없음';
+          if(!spendByCardName[e.category]) spendByCardName[e.category] = {};
+          spendByCardName[e.category][name] = (spendByCardName[e.category][name] || 0) + e.amount;
+        } else {
+          spendCash[e.category] = (spendCash[e.category] || 0) + e.amount;
+        }
+      }
+    });
+
+    listEl.innerHTML = cats.map(cat=>{
+      const limit = monthBudgets[cat] || 0;
+      const used = spend[cat] || 0;
+      const usedCard = spendCard[cat] || 0;
+      const usedCash = spendCash[cat] || 0;
+      const pct = limit > 0 ? Math.min(100, Math.round(used / limit * 100)) : 0;
+      const over = limit > 0 && used > limit;
+      const cardNames = spendByCardName[cat];
+      const cardDetail = cardNames
+        ? ' (' + Object.entries(cardNames).map(([name, amt]) => `${name} ${fmt(amt)}`).join(' · ') + ')'
+        : '';
+      return `
+        <div class="budget-item">
+          <div class="budget-item-top">
+            <span class="budget-cat-name">${escapeHtml(cat)}</span>
+            <input type="text" inputmode="numeric" class="budget-input" data-cat="${escapeHtml(cat)}"
+              placeholder="이번 달 한도 입력" value="${limit ? limit.toLocaleString('ko-KR') : ''}">
+          </div>
+          ${limit > 0 ? `
+            <div class="budget-bar"><div class="budget-bar-fill ${over ? 'over' : ''}" style="width:${pct}%"></div></div>
+            <div class="budget-status ${over ? 'over' : ''}">${fmt(used)} / ${fmt(limit)} 사용${over ? ' · 한도 초과!' : ''}</div>
+            <div class="budget-pm-split">${escapeHtml(`카드 ${fmt(usedCard)}${cardDetail} · 현금 ${fmt(usedCash)}`)}</div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
   }
 
   function getVisibleEntries(){
@@ -1923,7 +2121,7 @@
               <input type="checkbox" class="chk" data-id="${e.id}" ${state.selectedIds.has(e.id) ? 'checked' : ''}>
               <div class="badge">${e.type === 'income' ? '수' : '지'}</div>
               <div class="info">
-                <div class="cat">${escapeHtml(e.category)}${e.memo ? ' · ' + escapeHtml(e.memo) : ''}${e.paymentMethod ? `<span class="pm-tag">${PAYMENT_METHOD_LABELS[e.paymentMethod] || e.paymentMethod}</span>` : ''}</div>
+                <div class="cat">${escapeHtml(e.category)}${e.memo ? ' · ' + escapeHtml(e.memo) : ''}${e.paymentMethod ? `<span class="pm-tag">${e.paymentMethod === 'card' && e.cardName ? escapeHtml(e.cardName) : (PAYMENT_METHOD_LABELS[e.paymentMethod] || e.paymentMethod)}</span>` : ''}</div>
               </div>
               <div class="amt">${e.type === 'income' ? '+' : '-'}${e.amount.toLocaleString('ko-KR')}원</div>
             </div>
@@ -2039,30 +2237,28 @@
         const key = toDateStr(d);
         labels.push((d.getMonth()+1)+'.'+d.getDate());
         let inc=0, exp=0;
-        state.entries.forEach(e=>{ if(e.date === key){ if(e.type==='income') inc+=e.amount; else exp+=e.amount; }});
+        state.entries.forEach(e=>{ if(e.date === key && matchesPmFilter(e)){ if(e.type==='income') inc+=e.amount; else exp+=e.amount; }});
         incomeData.push(inc); expenseData.push(exp);
       }
     } else if(state.currentPeriod === 'week'){
-      // last 6 weeks (Mon-Sun)
-      const weeks = [];
+      // this month split into week buckets (1~7일, 8~14일, ...월말) — always reflects today's month,
+      // so the labels/data roll over to the new month automatically once the month changes
       const now = new Date();
-      const dayOfWeek = (now.getDay()+6)%7; // 0=Mon
-      const thisMonday = new Date(now); thisMonday.setDate(now.getDate()-dayOfWeek);
-      for(let i=5;i>=0;i--){
-        const start = new Date(thisMonday); start.setDate(thisMonday.getDate()-7*i);
-        const end = new Date(start); end.setDate(start.getDate()+6);
-        weeks.push({start, end});
-      }
-      weeks.forEach(w=>{
-        const weekOfMonth = Math.ceil(w.end.getDate()/7);
-        labels.push((w.end.getMonth()+1)+'월 '+weekOfMonth+'주');
+      const ym = toDateStr(now).slice(0,7);
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+      const weekCount = Math.ceil(daysInMonth/7);
+      for(let w=0; w<weekCount; w++){
+        const startDay = w*7+1;
+        const endDay = Math.min(startDay+6, daysInMonth);
+        labels.push((now.getMonth()+1)+'월 '+(w+1)+'주');
         let inc=0, exp=0;
         state.entries.forEach(e=>{
-          const d = new Date(e.date+'T00:00:00');
-          if(d >= w.start && d <= w.end){ if(e.type==='income') inc+=e.amount; else exp+=e.amount; }
+          if(e.date.slice(0,7) !== ym || !matchesPmFilter(e)) return;
+          const day = Number(e.date.slice(8,10));
+          if(day >= startDay && day <= endDay){ if(e.type==='income') inc+=e.amount; else exp+=e.amount; }
         });
         incomeData.push(inc); expenseData.push(exp);
-      });
+      }
     } else {
       // fixed half-year block (1~6월 or 7~12월) — rolls over to the next block once the half turns over
       const now = new Date();
@@ -2072,7 +2268,7 @@
         const ym = toDateStr(d).slice(0,7);
         labels.push((d.getMonth()+1)+'월');
         let inc=0, exp=0;
-        state.entries.forEach(e=>{ if(e.date.slice(0,7) === ym){ if(e.type==='income') inc+=e.amount; else exp+=e.amount; }});
+        state.entries.forEach(e=>{ if(e.date.slice(0,7) === ym && matchesPmFilter(e)){ if(e.type==='income') inc+=e.amount; else exp+=e.amount; }});
         incomeData.push(inc); expenseData.push(exp);
       }
     }
@@ -2117,7 +2313,7 @@
     const period = state.catViewPeriod;
     const ym = todayStr().slice(0,7);
 
-    const filtered = state.entries.filter(e => e.type === type && (period === 'all' || e.date.slice(0,7) === ym));
+    const filtered = state.entries.filter(e => e.type === type && (period === 'all' || e.date.slice(0,7) === ym) && matchesPmFilter(e));
     const totals = {};
     filtered.forEach(e => { totals[e.category] = (totals[e.category] || 0) + e.amount; });
     const rows = Object.entries(totals)
@@ -2265,6 +2461,10 @@
 
   function renderAll(){
     renderSummary();
+    renderPaymentBreakdown();
+    renderBudgetList();
+    renderCardNameOptions();
+    renderPmFilterOptions();
     renderCalendar();
     renderList();
     renderBackupStatus();
@@ -2282,6 +2482,24 @@
       renderCategoryManageList();
     }
   }
+
+  // A browser can't run JS while the screen is off or the tab is fully backgrounded, so a date
+  // rollover (midnight, week/month turning over) can't be caught the instant it happens — instead
+  // we re-check on every point where the app could next be looked at (regained focus, tab shown
+  // again, restored from cache) plus a light interval while it stays open, so it's never stale
+  // by the time someone actually sees the screen again.
+  let lastKnownDate = todayStr();
+  function checkDateRollover(){
+    const t = todayStr();
+    if(t !== lastKnownDate){
+      lastKnownDate = t;
+      renderAll();
+    }
+  }
+  setInterval(checkDateRollover, 60000);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkDateRollover(); });
+  window.addEventListener('focus', checkDateRollover);
+  window.addEventListener('pageshow', checkDateRollover);
 
   // Backup: export to JSON file / import from JSON file
   $('exportBtn').addEventListener('click', ()=>{
@@ -2541,6 +2759,45 @@
     b.addEventListener('click', ()=> showPage(b.dataset.page));
   });
 
+  function goToRecords(){
+    showPage('graph');
+    showGraphSubTab('records');
+  }
+  ['statMonthIncome','statMonthExpense'].forEach(id=>{
+    $(id).addEventListener('click', goToRecords);
+  });
+
+  // Editing the balance directly would desync it from the entry list (and the graphs built from
+  // that list), so instead we add a "잔액 조정" entry for the gap — the balance stays exactly
+  // equal to the sum of entries, and the adjustment itself shows up in records/graphs like any other.
+  async function adjustBalance(){
+    let currentBalance = 0;
+    state.entries.forEach(e => currentBalance += (e.type === 'income' ? e.amount : -e.amount));
+
+    const input = prompt('현재 잔액을 얼마로 맞출까요? (원)', currentBalance);
+    if(input === null) return;
+    const target = Number(String(input).replace(/[^0-9-]/g,''));
+    if(!Number.isFinite(target)){ alert('숫자를 입력해주세요.'); return; }
+
+    const diff = target - currentBalance;
+    if(diff === 0) return;
+
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+      type: diff > 0 ? 'income' : 'expense',
+      category: '잔액 조정',
+      amount: Math.abs(diff),
+      date: todayStr(),
+      memo: '',
+      createdAt: new Date().toISOString()
+    };
+    state.entries.push(entry);
+    const ok = await saveEntries();
+    renderAll();
+    if(ok) showToast('잔액이 조정되었습니다');
+  }
+  $('balanceRow').addEventListener('click', adjustBalance);
+
   // Sub-tabs within the 그래프 page (기록 보기 / 그래프 보기 / 카테고리별 보기)
   function showGraphSubTab(sub){
     document.querySelectorAll('.sub-page').forEach(p => p.classList.toggle('active-sub', p.id === 'subpage-' + sub));
@@ -2643,12 +2900,42 @@
     await deleteCategories(state.catManageType, names);
   });
 
+  $('budgetList').addEventListener('input', (e)=>{
+    const input = e.target.closest('.budget-input');
+    if(!input) return;
+    const v = input.value.replace(/[^0-9]/g,'');
+    input.value = v ? Number(v).toLocaleString('ko-KR') : '';
+  });
+  $('budgetList').addEventListener('change', async (e)=>{
+    const input = e.target.closest('.budget-input');
+    if(!input) return;
+    const cat = input.dataset.cat;
+    const amount = Number(input.value.replace(/[^0-9]/g,''));
+    const ym = todayStr().slice(0,7);
+    if(!state.budgets[ym]) state.budgets[ym] = {};
+    if(amount > 0) state.budgets[ym][cat] = amount;
+    else delete state.budgets[ym][cat];
+    await saveBudgets();
+    renderBudgetList();
+  });
+
   document.querySelectorAll('#catViewPeriodToggle button').forEach(b=>{
     b.addEventListener('click', ()=>{
       state.catViewPeriod = b.dataset.catperiod;
       document.querySelectorAll('#catViewPeriodToggle button').forEach(x=>{
         x.classList.toggle('active', x === b);
       });
+      renderCategoryBreakdown();
+    });
+  });
+
+  ['pmFilterChart','pmFilterCategory'].forEach(id=>{
+    $(id).addEventListener('change', (e)=>{
+      state.pmFilter = e.target.value;
+      const otherId = id === 'pmFilterChart' ? 'pmFilterCategory' : 'pmFilterChart';
+      const other = $(otherId);
+      if(other) other.value = state.pmFilter;
+      renderChart();
       renderCategoryBreakdown();
     });
   });
@@ -2697,6 +2984,7 @@
     $('dateInput').value = entry.date;
     $('memoInput').value = entry.memo || '';
     setPaymentMethod(entry.paymentMethod || 'cash');
+    $('cardNameInput').value = entry.cardName || '';
 
     state.editingId = entry.id;
     $('editBanner').classList.add('show');
@@ -2718,6 +3006,32 @@
 
   $('cancelEditBtn').addEventListener('click', cancelEdit);
 
+  // Shows a budget-limit toast instead of the usual "저장 되었습니다" when the entry just
+  // saved pushes its category's spend for the current month near/over its set budget.
+  // Returns true if it showed a warning (so the caller skips the plain success toast).
+  function checkBudgetWarning(entry){
+    if(entry.type !== 'expense') return false;
+    const ym = todayStr().slice(0,7);
+    if(entry.date.slice(0,7) !== ym) return false;
+    const limit = (state.budgets[ym] || {})[entry.category];
+    if(!limit) return false;
+
+    let used = 0;
+    state.entries.forEach(e=>{
+      if(e.type === 'expense' && e.category === entry.category && e.date.slice(0,7) === ym) used += e.amount;
+    });
+
+    if(used > limit){
+      showToast(`${entry.category} 예산 초과! ${fmt(used)} / ${fmt(limit)}`, 'error');
+      return true;
+    }
+    if(used / limit >= 0.8){
+      showToast(`${entry.category} 예산의 ${Math.round(used / limit * 100)}%를 썼어요 (${fmt(used)} / ${fmt(limit)})`);
+      return true;
+    }
+    return false;
+  }
+
   $('saveBtn').addEventListener('click', async ()=>{
     const category = $('catSelect').value;
     const amountRaw = $('amountInput').value.replace(/[^0-9]/g,'');
@@ -2729,6 +3043,7 @@
     if(!amount || amount <= 0){ alert('금액을 입력해주세요.'); return; }
 
     const paymentMethod = state.currentPaymentMethod;
+    const cardName = paymentMethod === 'card' ? $('cardNameInput').value.trim() : '';
 
     if(state.editingId){
       const target = state.entries.find(en => en.id === state.editingId);
@@ -2740,11 +3055,16 @@
         target.memo = memo;
         if(paymentMethod) target.paymentMethod = paymentMethod;
         else delete target.paymentMethod;
+        if(cardName) target.cardName = cardName;
+        else delete target.cardName;
       }
       const ok = await saveEntries();
       cancelEdit();
       renderAll();
-      if(ok) showToast('수정 되었습니다');
+      if(ok){
+        const warned = target && checkBudgetWarning(target);
+        if(!warned) showToast('수정 되었습니다');
+      }
       return;
     }
 
@@ -2755,10 +3075,14 @@
       createdAt: new Date().toISOString()
     };
     if(paymentMethod) entry.paymentMethod = paymentMethod;
+    if(cardName) entry.cardName = cardName;
     state.entries.push(entry);
     const ok = await saveEntries();
     renderAll();
-    if(ok) showToast('저장 되었습니다');
+    if(ok){
+      const warned = checkBudgetWarning(entry);
+      if(!warned) showToast('저장 되었습니다');
+    }
 
     $('amountInput').value = '';
     $('memoInput').value = '';
@@ -2768,6 +3092,13 @@
     const editBtn = e.target.closest('.edit');
     if(editBtn){
       const entry = state.entries.find(en => en.id === editBtn.dataset.id);
+      if(entry) startEdit(entry);
+      return;
+    }
+    const textArea = e.target.closest('.info, .amt');
+    if(textArea){
+      const item = e.target.closest('.record-item');
+      const entry = item && state.entries.find(en => en.id === item.dataset.id);
       if(entry) startEdit(entry);
       return;
     }

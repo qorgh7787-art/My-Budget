@@ -154,6 +154,7 @@
   .type-toggle button.active[data-type="income"]{ background: var(--income); color:#fff; box-shadow: 0 4px 10px -4px rgba(36,180,126,0.6);}
   .type-toggle button.active[data-type="expense"]{ background: var(--expense); color:#fff; box-shadow: 0 4px 10px -4px rgba(255,122,104,0.6);}
   .pm-toggle button.active{ background: var(--accent-deep); color:#fff; box-shadow: 0 4px 10px -4px rgba(31,127,179,0.6); }
+  .pm-toggle button{ font-size:12.5px; padding:10px 2px; }
   .pm-tag{
     display:inline-block; font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:999px;
     background: var(--card-soft); color: var(--text-soft); margin-left:6px; vertical-align:middle;
@@ -863,7 +864,8 @@
         <label>결제 수단</label>
         <div class="type-toggle pm-toggle" id="paymentMethodToggle">
           <button type="button" data-pm="cash" class="active">현금</button>
-          <button type="button" data-pm="card">카드</button>
+          <button type="button" data-pm="credit">신용카드</button>
+          <button type="button" data-pm="debit">체크카드</button>
         </div>
       </div>
 
@@ -1170,6 +1172,7 @@
     cards: [],
     currentType: 'income',
     currentPaymentMethod: 'cash',
+    currentPmChoice: 'cash',
     currentPeriod: 'day',
     selectedIds: new Set(),
     selectedDate: null,
@@ -1971,12 +1974,17 @@
     renderCategorySelect();
   }
 
+  // pm is the 3-way toggle choice: 'cash' | 'credit' | 'debit'. The entry itself still stores a
+  // generic paymentMethod of 'cash' or 'card' (so all the card/cash analytics built earlier don't
+  // need to change) — currentPmChoice only decides which of 신용/체크 the card-name list is filtered to.
   function setPaymentMethod(pm){
-    state.currentPaymentMethod = pm;
+    state.currentPmChoice = pm;
+    state.currentPaymentMethod = pm === 'cash' ? 'cash' : 'card';
     document.querySelectorAll('#paymentMethodToggle button').forEach(b=>{
       b.classList.toggle('active', b.dataset.pm === pm);
     });
-    $('cardNameField').classList.toggle('hidden', pm !== 'card');
+    $('cardNameField').classList.toggle('hidden', pm === 'cash');
+    renderCardNameSelect();
   }
   document.querySelectorAll('#paymentMethodToggle button').forEach(b=>{
     b.addEventListener('click', ()=> setPaymentMethod(b.dataset.pm));
@@ -2057,8 +2065,10 @@
     const sel = $('cardNameSelect');
     if(!sel) return;
     const prev = sel.value;
-    sel.innerHTML = state.cards.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)} (${cardTypeLabel(c.type)})</option>`).join('');
-    if(state.cards.some(c => c.name === prev)) sel.value = prev;
+    const wantType = state.currentPmChoice === 'debit' ? 'debit' : 'credit';
+    const list = state.cards.filter(c => c.type === wantType);
+    sel.innerHTML = list.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('');
+    if(list.some(c => c.name === prev)) sel.value = prev;
   }
 
   let selectedCardNames = new Set();
@@ -3201,6 +3211,7 @@
 
   $('cardAddToggle').addEventListener('click', ()=>{
     $('newCardRow').classList.toggle('show');
+    $('newCardTypeSelect').value = state.currentPmChoice === 'debit' ? 'debit' : 'credit';
     $('newCardInput').focus();
   });
   $('newCardSave').addEventListener('click', async ()=>{
@@ -3208,6 +3219,9 @@
     if(!val) return;
     const type = $('newCardTypeSelect').value;
     await addCard(val, type);
+    // switch the toggle to match what was just added, so the new card shows up selected right away
+    setPaymentMethod(type === 'debit' ? 'debit' : 'credit');
+    $('cardNameSelect').value = val;
     $('newCardInput').value = '';
     $('newCardTypeSelect').value = 'credit';
     $('newCardRow').classList.remove('show');
@@ -3232,13 +3246,17 @@
     $('amountInput').value = entry.amount.toLocaleString('ko-KR');
     $('dateInput').value = entry.date;
     $('memoInput').value = entry.memo || '';
-    setPaymentMethod(entry.paymentMethod || 'cash');
     // make sure the entry's card shows up in the dropdown even if it was since renamed/removed
     // (type defaults to 신용카드 since we no longer know the original — user can fix it in 카드 관리)
     if(entry.cardName && !state.cards.some(c => c.name === entry.cardName)){
       state.cards.push({ name: entry.cardName, type: 'credit' });
-      renderCardNameSelect();
     }
+    let pmChoice = 'cash';
+    if(entry.paymentMethod === 'card'){
+      const card = state.cards.find(c => c.name === entry.cardName);
+      pmChoice = card && card.type === 'debit' ? 'debit' : 'credit';
+    }
+    setPaymentMethod(pmChoice);
     if(entry.cardName) $('cardNameSelect').value = entry.cardName;
 
     state.editingId = entry.id;

@@ -186,6 +186,16 @@
     border:none; background: var(--accent-deep); color:#fff; border-radius:10px; padding:0 14px; font-size:13px; font-weight:700; cursor:pointer;
   }
   .new-card-row{ flex-direction:column; align-items:stretch; }
+  .card-manage-add{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+  .card-manage-add input{
+    width:100%; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line);
+    font-size:14px; font-family:inherit; background:#fbfeff; color:var(--text);
+  }
+  .card-manage-add input:focus{ outline:none; border-color: var(--accent); background:#fff; }
+  .card-manage-add > button{
+    border:none; background: var(--accent-deep); color:#fff; border-radius:10px; padding:11px 14px;
+    font-size:13px; font-weight:700; cursor:pointer;
+  }
   .new-card-row-bottom{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
   .new-card-type-select{
     flex:1 1 130px; min-width:130px; border-radius:10px; border:1.5px solid var(--line); font-size:13px; padding:8px;
@@ -492,6 +502,17 @@
     background:#fff; color: var(--text);
   }
   .pm-filter-select:focus{ outline:none; border-color: var(--accent); }
+
+  .mini-section-label{ font-size:12.5px; color: var(--text-soft); font-weight:700; margin:2px 0 8px; }
+  .card-breakdown-header{ display:flex; gap:8px; padding:0 12px; margin-bottom:6px; font-size:11px; color: var(--text-soft); font-weight:600; }
+  .card-breakdown-header span:first-child{ flex:1; }
+  .card-breakdown-header span:not(:first-child){ width:80px; text-align:right; }
+  .card-breakdown-list{ display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+  .card-breakdown-item{ display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; background: var(--card-soft); }
+  .card-breakdown-item .name{ flex:1; min-width:0; font-size:13px; font-weight:600; color: var(--text); overflow-wrap:anywhere; }
+  .card-breakdown-item .v{ width:80px; flex-shrink:0; text-align:right; font-size:12.5px; font-weight:700; }
+  .card-breakdown-item .v.income{ color: var(--income); }
+  .card-breakdown-item .v.expense{ color: var(--expense); }
 
   /* Admin: member management */
   .member-item{
@@ -866,8 +887,8 @@
         <label>결제 수단</label>
         <div class="type-toggle pm-toggle" id="paymentMethodToggle">
           <button type="button" data-pm="cash" class="active">현금</button>
-          <button type="button" data-pm="credit">신용카드</button>
           <button type="button" data-pm="debit">체크카드</button>
+          <button type="button" data-pm="credit">신용카드</button>
         </div>
       </div>
 
@@ -881,8 +902,8 @@
           <input type="text" id="newCardInput" placeholder="새 카드 이름 입력">
           <div class="new-card-row-bottom">
             <select id="newCardTypeSelect" class="new-card-type-select">
-              <option value="credit">신용카드</option>
               <option value="debit">체크카드</option>
+              <option value="credit">신용카드</option>
             </select>
             <button type="button" id="newCardSave">추가</button>
           </div>
@@ -922,12 +943,39 @@
       <button class="save-btn income-mode" id="saveBtn">저장하기</button>
     </div>
 
+    <!-- Card management -->
+    <div class="card">
+      <h2><span class="dot"></span>카드 관리</h2>
+      <p class="backup-desc">체크카드는 현금처럼 바로 통장에서 빠져나가서 "현재 잔액"에 반영되고, 신용카드는 나중에 청구되는 돈이라 잔액에서 제외돼요 — 카드 옆 배지를 눌러 유형을 바꿀 수 있어요.</p>
+      <div class="card-manage-add">
+        <input type="text" id="cardManageAddInput" placeholder="새 카드 이름 입력">
+        <div class="new-card-row-bottom">
+          <select id="cardManageAddTypeSelect" class="new-card-type-select">
+            <option value="debit">체크카드</option>
+            <option value="credit">신용카드</option>
+          </select>
+          <button type="button" id="cardManageAddSave">카드 추가</button>
+        </div>
+      </div>
+      <div class="cat-manage-header">
+        <label><input type="checkbox" id="cardManageSelectAll">전체 선택</label>
+        <div class="cat-manage-header-actions">
+          <button type="button" id="cardManageDeleteSelected" disabled>선택 삭제</button>
+        </div>
+      </div>
+      <div class="cat-manage-list" id="cardManageList"></div>
+    </div>
+
     <!-- Category management -->
     <div class="card">
       <h2><span class="dot"></span>카테고리 관리</h2>
       <div class="type-toggle" id="catManageTypeToggle">
         <button data-type="income" class="active">수입</button>
         <button data-type="expense">지출</button>
+      </div>
+      <div class="card-manage-add">
+        <input type="text" id="catManageAddInput" placeholder="새 카테고리 이름 입력">
+        <button type="button" id="catManageAddSave">카테고리 추가</button>
       </div>
       <div class="cat-manage-header">
         <label><input type="checkbox" id="catManageSelectAll">전체 선택</label>
@@ -936,19 +984,6 @@
         </div>
       </div>
       <div class="cat-manage-list" id="catManageList"></div>
-    </div>
-
-    <!-- Card management -->
-    <div class="card">
-      <h2><span class="dot"></span>카드 관리</h2>
-      <p class="backup-desc">여기서 카드를 먼저 등록해두면, 기록 추가할 때 목록에서 골라 쓸 수 있어요. 체크카드는 현금처럼 바로 통장에서 빠져나가서 "현재 잔액"에 반영되고, 신용카드는 나중에 청구되는 돈이라 잔액에서 제외돼요 — 카드 옆 배지를 눌러 유형을 바꿀 수 있어요.</p>
-      <div class="cat-manage-header">
-        <label><input type="checkbox" id="cardManageSelectAll">전체 선택</label>
-        <div class="cat-manage-header-actions">
-          <button type="button" id="cardManageDeleteSelected" disabled>선택 삭제</button>
-        </div>
-      </div>
-      <div class="cat-manage-list" id="cardManageList"></div>
     </div>
 
     <!-- Category budgets -->
@@ -998,12 +1033,32 @@
 
     <div class="sub-page" id="subpage-chart">
       <div class="card">
+        <h2><span class="dot"></span>날짜 선택</h2>
+        <div class="cal-header">
+          <button type="button" class="cal-nav" data-cal-action="prev">‹</button>
+          <div class="cal-month-label"></div>
+          <button type="button" class="cal-nav" data-cal-action="next">›</button>
+        </div>
+        <div class="cal-weekdays">
+          <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+        </div>
+        <div class="cal-grid"></div>
+        <div class="cal-filter-row" style="display:none;">
+          <span class="cal-filter-label"></span>
+          <button type="button" data-cal-action="clear">전체보기</button>
+        </div>
+      </div>
+
+      <div class="card">
         <h2><span class="dot"></span>그래프로 보기</h2>
         <div class="pm-breakdown" id="pmBreakdownChart"></div>
         <div class="pm-filter-row">
           <label for="pmFilterChart">결제수단</label>
           <select id="pmFilterChart" class="pm-filter-select"></select>
         </div>
+        <div class="mini-section-label">카드별 보기</div>
+        <div class="card-breakdown-header"><span></span><span>수입</span><span>지출</span></div>
+        <div class="card-breakdown-list" id="cardBreakdownChart"></div>
         <div class="period-toggle" id="graphPeriodToggle">
           <button data-period="day" class="active">일간</button>
           <button data-period="week">주간</button>
@@ -1019,18 +1074,38 @@
 
     <div class="sub-page" id="subpage-category">
       <div class="card">
+        <h2><span class="dot"></span>날짜 선택</h2>
+        <div class="cal-header">
+          <button type="button" class="cal-nav" data-cal-action="prev">‹</button>
+          <div class="cal-month-label"></div>
+          <button type="button" class="cal-nav" data-cal-action="next">›</button>
+        </div>
+        <div class="cal-weekdays">
+          <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+        </div>
+        <div class="cal-grid"></div>
+        <div class="cal-filter-row" style="display:none;">
+          <span class="cal-filter-label"></span>
+          <button type="button" data-cal-action="clear">전체보기</button>
+        </div>
+      </div>
+
+      <div class="card">
         <h2><span class="dot"></span>카테고리별 보기</h2>
         <div class="pm-breakdown" id="pmBreakdownCategory"></div>
         <div class="pm-filter-row">
           <label for="pmFilterCategory">결제수단</label>
           <select id="pmFilterCategory" class="pm-filter-select"></select>
         </div>
+        <div class="mini-section-label">카드별 보기</div>
+        <div class="card-breakdown-header"><span></span><span>수입</span><span>지출</span></div>
+        <div class="card-breakdown-list" id="cardBreakdownCategory"></div>
         <div class="type-toggle" id="catViewTypeToggle">
           <button data-type="income" class="active">수입</button>
           <button data-type="expense">지출</button>
         </div>
         <div class="period-toggle" id="catViewPeriodToggle">
-          <button data-catperiod="month" class="active">이번 달</button>
+          <button data-catperiod="month" class="active">선택한 날짜</button>
           <button data-catperiod="all">전체 기간</button>
         </div>
         <div class="chart-wrap cat-chart-wrap"><canvas id="catChart"></canvas></div>
@@ -1209,6 +1284,19 @@
     return `${y}-${m}-${day}`;
   };
   const todayStr = () => toDateStr(new Date());
+
+  // What "오늘"/"이번 달" should mean for the 그래프·카테고리별 보기 charts — lets the 달력 (calendar)
+  // card in those tabs browse to any past month/day instead of always the real current date.
+  // - a specific day picked in the calendar wins outright
+  // - otherwise, browsing to a different month anchors on that month's 1st
+  // - and browsing back to the real current month falls back to today (so nothing changes by default)
+  function chartAnchorDate(){
+    if(state.selectedDate) return new Date(state.selectedDate + 'T00:00:00');
+    const realNow = new Date();
+    const y = state.calendarMonth.getFullYear(), m = state.calendarMonth.getMonth();
+    if(y === realNow.getFullYear() && m === realNow.getMonth()) return realNow;
+    return new Date(y, m, 1);
+  }
 
   let toastTimer = null;
   function showToast(msg, type){
@@ -1965,6 +2053,18 @@
 
   const otherLabelOf = (type) => type === 'income' ? '기타수입' : '기타지출';
 
+  async function addCategory(type, name){
+    const catList = state.categories[type];
+    if(catList.includes(name)){ showToast('이미 있는 카테고리예요', 'error'); return false; }
+    const other = otherLabelOf(type);
+    const otherIdx = catList.indexOf(other);
+    if(otherIdx !== -1) catList.splice(otherIdx, 0, name); // insert just above the pinned "기타" category
+    else catList.push(name);
+    const ok = await saveCategories();
+    if(ok) showToast('카테고리를 추가했어요');
+    return ok;
+  }
+
   function renderCategorySelect(){
     const sel = $('catSelect');
     const other = otherLabelOf(state.currentType);
@@ -2060,10 +2160,12 @@
     const catEl = $('pmBreakdownCategory');
     if(!chartEl && !catEl) return;
 
-    const ym = todayStr().slice(0,7);
+    const ym = toDateStr(chartAnchorDate()).slice(0,7);
     let creditIncome=0, creditExpense=0, debitIncome=0, debitExpense=0, cashIncome=0, cashExpense=0;
     state.entries.forEach(e=>{
-      if(e.date.slice(0,7) !== ym || e.isAdjustment) return;
+      if(e.isAdjustment) return;
+      if(state.selectedDate){ if(e.date !== state.selectedDate) return; }
+      else if(e.date.slice(0,7) !== ym) return;
       const cat = pmCategoryOf(e);
       if(e.type === 'income'){
         if(cat === 'credit') creditIncome += e.amount;
@@ -2089,6 +2191,49 @@
   }
 
   const cardTypeLabel = (type) => type === 'debit' ? '체크카드' : '신용카드';
+
+  // Per-card income/expense for the currently anchored period — sits right under the 결제수단
+  // filter so 카드별 사용액 can be read at a glance, same date scoping as renderPaymentBreakdown
+  // (달력에서 고른 달, 혹은 특정 날짜 하루). 체크카드 먼저, 신용카드 나중, 각각 이름순 정렬.
+  function renderCardBreakdown(){
+    const chartEl = $('cardBreakdownChart');
+    const catEl = $('cardBreakdownCategory');
+    if(!chartEl && !catEl) return;
+
+    const ym = toDateStr(chartAnchorDate()).slice(0,7);
+    const totals = {};
+    state.cards.forEach(c => { totals[c.name] = { income:0, expense:0, type:c.type }; });
+    state.entries.forEach(e=>{
+      if(e.paymentMethod !== 'card' || !e.cardName || e.isAdjustment) return;
+      if(state.selectedDate){ if(e.date !== state.selectedDate) return; }
+      else if(e.date.slice(0,7) !== ym) return;
+      if(!totals[e.cardName]) totals[e.cardName] = { income:0, expense:0, type:'credit' };
+      if(e.type === 'income') totals[e.cardName].income += e.amount;
+      else totals[e.cardName].expense += e.amount;
+    });
+
+    const debitRows = [], creditRows = [];
+    Object.entries(totals).forEach(([name, t]) => {
+      (t.type === 'debit' ? debitRows : creditRows).push({ name, ...t });
+    });
+    debitRows.sort((a,b) => a.name.localeCompare(b.name));
+    creditRows.sort((a,b) => a.name.localeCompare(b.name));
+
+    const rowHtml = (r) => `
+      <div class="card-breakdown-item">
+        <span class="name">${escapeHtml(r.name)}</span>
+        <span class="v income">${fmt(r.income)}</span>
+        <span class="v expense">${fmt(r.expense)}</span>
+      </div>
+    `;
+    const rows = [...debitRows, ...creditRows];
+    const html = rows.length === 0
+      ? '<div class="cat-manage-empty">등록된 카드가 없어요.</div>'
+      : rows.map(rowHtml).join('');
+
+    if(chartEl) chartEl.innerHTML = html;
+    if(catEl) catEl.innerHTML = html;
+  }
 
   // What the 기록 보기 pm-tag should read for one entry — plain "현금"/"카드" when there's no
   // card name on record, otherwise the card's name plus its 신용/체크 classification.
@@ -2215,24 +2360,24 @@
     const catEl = $('pmFilterCategory');
     if(!chartEl && !catEl) return;
 
-    const names = new Set();
+    const debitNames = new Set(), creditNames = new Set();
     let hasUnnamedCard = false;
     state.entries.forEach(e=>{
       if(e.paymentMethod === 'card'){
-        if(e.cardName) names.add(e.cardName);
-        else hasUnnamedCard = true;
+        if(!e.cardName){ hasUnnamedCard = true; return; }
+        const card = state.cards.find(c => c.name === e.cardName);
+        (card && card.type === 'debit' ? debitNames : creditNames).add(e.cardName);
       }
     });
+    // 고정 순서: 전체 → 현금 → 체크카드(전체 + 카드별) → 신용카드(전체 + 카드별)
     const opts = [
       { value:'all', label:'전체' },
       { value:'cash', label:'현금' },
-      { value:'credit_all', label:'신용카드 전체' },
       { value:'debit_all', label:'체크카드 전체' }
     ];
-    [...names].sort().forEach(n => {
-      const card = state.cards.find(c => c.name === n);
-      opts.push({ value:n, label: card ? `${n} (${cardTypeLabel(card.type)})` : n });
-    });
+    [...debitNames].sort().forEach(n => opts.push({ value:n, label:`${n} (체크카드)` }));
+    opts.push({ value:'credit_all', label:'신용카드 전체' });
+    [...creditNames].sort().forEach(n => opts.push({ value:n, label:`${n} (신용카드)` }));
     if(hasUnnamedCard) opts.push({ value:'__card_unnamed__', label:'카드(이름 없음)' });
 
     if(!opts.some(o => o.value === state.pmFilter)) state.pmFilter = 'all';
@@ -2459,7 +2604,7 @@
 
     if(state.currentPeriod === 'day'){
       // this week (Mon-Sun) — rolls over to next week automatically once Sunday turns into Monday
-      const now = new Date();
+      const now = chartAnchorDate();
       const dayOfWeek = (now.getDay()+6)%7; // 0=Mon
       const monday = new Date(now); monday.setDate(now.getDate()-dayOfWeek);
       for(let i=0;i<7;i++){
@@ -2473,7 +2618,7 @@
     } else if(state.currentPeriod === 'week'){
       // this month split into week buckets (1~7일, 8~14일, ...월말) — always reflects today's month,
       // so the labels/data roll over to the new month automatically once the month changes
-      const now = new Date();
+      const now = chartAnchorDate();
       const ym = toDateStr(now).slice(0,7);
       const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
       const weekCount = Math.ceil(daysInMonth/7);
@@ -2491,7 +2636,7 @@
       }
     } else {
       // fixed half-year block (1~6월 or 7~12월) — rolls over to the next block once the half turns over
-      const now = new Date();
+      const now = chartAnchorDate();
       const half = now.getMonth() < 6 ? 0 : 6;
       for(let i=0;i<6;i++){
         const d = new Date(now.getFullYear(), half+i, 1);
@@ -2541,9 +2686,14 @@
 
     const type = state.catViewType;
     const period = state.catViewPeriod;
-    const ym = todayStr().slice(0,7);
+    const ym = toDateStr(chartAnchorDate()).slice(0,7);
 
-    const filtered = state.entries.filter(e => e.type === type && !e.isAdjustment && (period === 'all' || e.date.slice(0,7) === ym) && matchesPmFilter(e));
+    const filtered = state.entries.filter(e => {
+      if(e.type !== type || e.isAdjustment || !matchesPmFilter(e)) return false;
+      if(period === 'all') return true;
+      if(state.selectedDate) return e.date === state.selectedDate;
+      return e.date.slice(0,7) === ym;
+    });
     const totals = {};
     filtered.forEach(e => { totals[e.category] = (totals[e.category] || 0) + e.amount; });
     const rows = Object.entries(totals)
@@ -2692,6 +2842,7 @@
   function renderAll(){
     renderSummary();
     renderPaymentBreakdown();
+    renderCardBreakdown();
     renderBudgetList();
     renderCardNameSelect();
     renderCardManageList();
@@ -3234,6 +3385,8 @@
       if(other) other.value = state.pmFilter;
       renderChart();
       renderCategoryBreakdown();
+      renderPaymentBreakdown();
+      renderCardBreakdown();
     });
   });
 
@@ -3244,21 +3397,33 @@
   $('newCatSave').addEventListener('click', async ()=>{
     const val = $('newCatInput').value.trim();
     if(!val) return;
-    const catList = state.categories[state.currentType];
-    if(!catList.includes(val)){
-      const other = otherLabelOf(state.currentType);
-      const otherIdx = catList.indexOf(other);
-      if(otherIdx !== -1){
-        catList.splice(otherIdx, 0, val); // insert just above the pinned "기타" category
-      } else {
-        catList.push(val);
-      }
-      await saveCategories();
+    const ok = await addCategory(state.currentType, val);
+    if(ok){
       renderCategorySelect();
       $('catSelect').value = val;
+      // 카테고리 관리 목록도 지금 추가한 유형(수입/지출) 쪽으로 맞춰서 바로 보이게 한다
+      state.catManageType = state.currentType;
+      document.querySelectorAll('#catManageTypeToggle button').forEach(b=>{
+        b.classList.toggle('active', b.dataset.type === state.catManageType);
+      });
+      renderCategoryManageList();
     }
     $('newCatInput').value = '';
     $('newCatRow').classList.remove('show');
+  });
+
+  $('catManageAddSave').addEventListener('click', async ()=>{
+    const val = $('catManageAddInput').value.trim();
+    if(!val) return;
+    const ok = await addCategory(state.catManageType, val);
+    if(ok){
+      renderCategoryManageList();
+      if(state.currentType === state.catManageType){
+        renderCategorySelect();
+        $('catSelect').value = val;
+      }
+    }
+    $('catManageAddInput').value = '';
   });
 
   $('cardAddToggle').addEventListener('click', ()=>{
@@ -3277,6 +3442,15 @@
     $('newCardInput').value = '';
     $('newCardTypeSelect').value = 'credit';
     $('newCardRow').classList.remove('show');
+  });
+
+  $('cardManageAddSave').addEventListener('click', async ()=>{
+    const val = $('cardManageAddInput').value.trim();
+    if(!val) return;
+    const type = $('cardManageAddTypeSelect').value;
+    await addCard(val, type);
+    $('cardManageAddInput').value = '';
+    $('cardManageAddTypeSelect').value = 'debit';
   });
 
   $('amountInput').addEventListener('input', (e)=>{
@@ -3459,18 +3633,29 @@
     renderList();
   });
 
-  // Delegated calendar events — works across both calendar instances (record page + records subpage)
+  // Delegated calendar events — works across every calendar instance on the page (record page,
+  // records subpage, and now the 그래프 보기/카테고리별 보기 calendars too, all kept in sync).
+  // Re-rendering the charts here is what lets browsing the calendar actually change what
+  // 일간/주간/월간 and 카테고리별 보기 show, instead of them always being locked to today.
   document.addEventListener('click', (e)=>{
     const prevBtn = e.target.closest('[data-cal-action="prev"]');
     if(prevBtn){
       state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth()-1, 1);
       renderCalendar();
+      renderChart();
+      renderCategoryBreakdown();
+      renderPaymentBreakdown();
+      renderCardBreakdown();
       return;
     }
     const nextBtn = e.target.closest('[data-cal-action="next"]');
     if(nextBtn){
       state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth()+1, 1);
       renderCalendar();
+      renderChart();
+      renderCategoryBreakdown();
+      renderPaymentBreakdown();
+      renderCardBreakdown();
       return;
     }
     const clearBtn = e.target.closest('[data-cal-action="clear"]');
@@ -3479,6 +3664,10 @@
       saveListFilter();
       renderCalendar();
       renderList();
+      renderChart();
+      renderCategoryBreakdown();
+      renderPaymentBreakdown();
+      renderCardBreakdown();
       return;
     }
     const dayBtn = e.target.closest('.cal-day');
@@ -3488,6 +3677,10 @@
       saveListFilter();
       renderCalendar();
       renderList();
+      renderChart();
+      renderCategoryBreakdown();
+      renderPaymentBreakdown();
+      renderCardBreakdown();
     }
   });
 

@@ -2189,6 +2189,8 @@
     const f = state.pmFilter;
     if(!f || f === 'all') return true;
     if(f === 'cash') return e.paymentMethod !== 'card';
+    if(f === 'credit_all') return pmCategoryOf(e) === 'credit';
+    if(f === 'debit_all') return pmCategoryOf(e) === 'debit';
     if(f === '__card_unnamed__') return e.paymentMethod === 'card' && !e.cardName;
     return e.paymentMethod === 'card' && e.cardName === f;
   }
@@ -2206,8 +2208,16 @@
         else hasUnnamedCard = true;
       }
     });
-    const opts = [{ value:'all', label:'전체' }, { value:'cash', label:'현금' }];
-    [...names].sort().forEach(n => opts.push({ value:n, label:n }));
+    const opts = [
+      { value:'all', label:'전체' },
+      { value:'cash', label:'현금' },
+      { value:'credit_all', label:'신용카드 전체' },
+      { value:'debit_all', label:'체크카드 전체' }
+    ];
+    [...names].sort().forEach(n => {
+      const card = state.cards.find(c => c.name === n);
+      opts.push({ value:n, label: card ? `${n} (${cardTypeLabel(card.type)})` : n });
+    });
     if(hasUnnamedCard) opts.push({ value:'__card_unnamed__', label:'카드(이름 없음)' });
 
     if(!opts.some(o => o.value === state.pmFilter)) state.pmFilter = 'all';

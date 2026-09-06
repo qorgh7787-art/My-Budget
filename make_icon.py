@@ -94,10 +94,21 @@ def build_maskable(path, size):
     base.save(path)
 
 
+def build_apple_touch(path, size):
+    # iOS applies its own rounded-corner mask on top of whatever we give it, so this must be a
+    # full-bleed square (no pre-baked alpha rounding) — but at scale=1.0, same as the favicon/
+    # icon-192, so the installed home-screen icon reads as the same artwork, just cropped by iOS.
+    base = make_base()
+    draw_passbook(base, scale=1.0)
+    base = base.resize((size, size), Image.LANCZOS)
+    base.save(path)
+
+
 if __name__ == "__main__":
     out = "C:/Users/dudtjs/Desktop/나만의 가계부"
     build_rounded(f"{out}/icon-192.png", 192)
     build_rounded(f"{out}/icon-512.png", 512)
     build_maskable(f"{out}/icon-maskable-192.png", 192)
     build_maskable(f"{out}/maskable-512.png", 512)
+    build_apple_touch(f"{out}/apple-touch-icon.png", 180)
     print("done")

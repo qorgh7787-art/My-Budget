@@ -112,6 +112,11 @@
   .mini-stat .v{ font-size:15px; font-weight:700; margin-top:2px; }
   .home-link{ cursor:pointer; }
 
+  .balance-breakdown{ display:flex; gap:8px; margin-top:10px; position:relative; z-index:1; }
+  .bd-item{ flex:1; min-width:0; background: rgba(255,255,255,0.14); border-radius:10px; padding:6px 8px; }
+  .bd-item .l{ font-size:10px; opacity:0.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bd-item .v{ font-size:13px; font-weight:700; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
   .install-btn{
     display:none; align-items:center; gap:6px; position:absolute; top:18px; right:18px; z-index:2;
     background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.4); color:#fff;
@@ -704,6 +709,11 @@
           <div class="label">현재 잔액 (현금·체크카드) ✏️</div>
           <div class="balance-num" id="balanceNum">0원</div>
         </div>
+      </div>
+      <div class="balance-breakdown">
+        <div class="bd-item"><div class="l">현금</div><div class="v" id="cashBalanceNum">0원</div></div>
+        <div class="bd-item"><div class="l">체크카드</div><div class="v" id="debitBalanceNum">0원</div></div>
+        <div class="bd-item"><div class="l">신용카드(이번 달)</div><div class="v" id="creditMonthNum">0원</div></div>
       </div>
       <div class="mini-stats">
         <div class="mini-stat home-link" id="statMonthIncome"><div class="l">이번 달 수입</div><div class="v" id="monthIncome">0원</div></div>
@@ -2000,22 +2010,35 @@
 
   // 카드 결제는 지금 당장 통장/현금이 빠져나가는 게 아니라 나중에 한 번에 청구되는 돈이라,
   // "현재 잔액"은 현금(카드가 아닌) 기록만으로 계산한다. 카드 사용액은 카드/현금 요약 쪽에서 따로 확인.
-  const isCashEntry = (e) => {
-    if(e.paymentMethod !== 'card') return true;
+  // 'cash' | 'debit' | 'credit' — 체크카드는 통장에서 바로 빠져나가니 현금과 동일하게 취급하고,
+  // 신용카드(또는 유형을 알 수 없는 카드)는 나중에 청구되는 돈이라 따로 분류한다.
+  function pmCategoryOf(e){
+    if(e.paymentMethod !== 'card') return 'cash';
     const card = state.cards.find(c => c.name === e.cardName);
-    // 체크카드는 통장에서 바로 빠져나가니 현금과 동일하게 취급하고, 신용카드(또는 유형을 알 수 없는 카드)는 제외한다.
-    return !!card && card.type === 'debit';
-  };
+    return card && card.type === 'debit' ? 'debit' : 'credit';
+  }
+  const isCashEntry = (e) => pmCategoryOf(e) !== 'credit';
 
   function renderSummary(){
-    let balance = 0;
-    state.entries.forEach(e => { if(isCashEntry(e)) balance += (e.type === 'income' ? e.amount : -e.amount); });
+    const now = new Date();
+    const ym = toDateStr(now).slice(0,7);
+
+    // 현금·체크카드는 통장 잔액처럼 누적으로, 신용카드는 이번 달 청구 예정 금액만 따로 계산한다.
+    let balance = 0, cashBalance = 0, debitBalance = 0, creditMonthSpend = 0;
+    state.entries.forEach(e => {
+      const signed = e.type === 'income' ? e.amount : -e.amount;
+      const cat = pmCategoryOf(e);
+      if(cat === 'cash'){ balance += signed; cashBalance += signed; }
+      else if(cat === 'debit'){ balance += signed; debitBalance += signed; }
+      else if(e.date.slice(0,7) === ym){ creditMonthSpend += signed; }
+    });
     $('balanceNum').textContent = fmt(balance);
+    $('cashBalanceNum').textContent = fmt(cashBalance);
+    $('debitBalanceNum').textContent = fmt(debitBalance);
+    $('creditMonthNum').textContent = fmt(creditMonthSpend);
 
     // 잔액 조정 기록은 잔액 계산에는 반드시 포함하되(그래야 잔액이 사용자가 맞춘 숫자와 일치),
     // "이번 달 수입/지출"은 실제 수입·지출만 보여줘야 하니 여기서는 제외한다.
-    const now = new Date();
-    const ym = toDateStr(now).slice(0,7);
     let mIncome = 0, mExpense = 0;
     state.entries.forEach(e => {
       if(e.date.slice(0,7) === ym && !e.isAdjustment){
@@ -2232,7 +2255,11 @@
       const over = limit > 0 && used > limit;
       const cardNames = spendByCardName[cat];
       const cardDetail = cardNames
-        ? ' (' + Object.entries(cardNames).map(([name, amt]) => `${name} ${fmt(amt)}`).join(' · ') + ')'
+        ? ' (' + Object.entries(cardNames).map(([name, amt]) => {
+            const card = state.cards.find(c => c.name === name);
+            const label = card ? `${name}(${cardTypeLabel(card.type)})` : name;
+            return `${label} ${fmt(amt)}`;
+          }).join(' · ') + ')'
         : '';
       return `
         <div class="budget-item">

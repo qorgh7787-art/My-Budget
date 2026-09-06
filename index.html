@@ -666,9 +666,33 @@
   .auth-switch{ margin:18px 0 0; font-size:0.82rem; color: var(--text-soft); }
   .auth-switch a{ color: var(--accent-deep); font-weight:700; text-decoration:none; }
   .auth-switch a:hover{ text-decoration:underline; }
+
+  /* Shown instantly on load (before any JS/Firebase has run) so the very first paint is never
+     a blank white screen — hidden as soon as init() knows whether to show login or the app. */
+  #bootLoading{
+    position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:14px;
+    background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 45%, #f6fcff 100%);
+  }
+  #bootLoading.hidden{ display:none; }
+  .boot-spinner{
+    width:36px; height:36px; border-radius:50%;
+    border:4px solid var(--accent-pale); border-top-color: var(--accent-deep);
+    animation: boot-spin 0.7s linear infinite;
+  }
+  @keyframes boot-spin{ to{ transform: rotate(360deg); } }
+  .boot-title{
+    font-family:'Gowun Dodum', 'Noto Sans KR', sans-serif; font-size:18px;
+    color: var(--accent-deep); font-weight:700;
+  }
 </style>
 </head>
 <body>
+
+<div id="bootLoading">
+  <div class="boot-spinner"></div>
+  <div class="boot-title">나만의 가계부</div>
+</div>
 
 <div class="login-screen hidden" id="loginScreen">
   <div class="login-card">
@@ -1796,6 +1820,7 @@
   const bottomNav = $('bottomNav');
 
   function showApp(){
+    $('bootLoading').classList.add('hidden');
     loginScreen.classList.add('hidden');
     appRoot.classList.remove('hidden');
     bottomNav.classList.remove('hidden');
@@ -1813,6 +1838,7 @@
     if(!isAdmin() && $('page-admin')?.classList.contains('active-page')) showPage('settings');
   }
   function showLoginScreenUI(){
+    $('bootLoading').classList.add('hidden');
     appRoot.classList.add('hidden');
     bottomNav.classList.add('hidden');
     loginScreen.classList.remove('hidden');

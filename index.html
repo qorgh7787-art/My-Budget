@@ -901,7 +901,7 @@
         <div class="new-cat-row new-card-row" id="newCardRow">
           <input type="text" id="newCardInput" placeholder="새 카드 이름 입력">
           <div class="new-card-row-bottom">
-            <select id="newCardTypeSelect" class="new-card-type-select">
+            <select id="newCardTypeSelect" class="new-card-type-select" autocomplete="off">
               <option value="debit">체크카드</option>
               <option value="credit">신용카드</option>
             </select>
@@ -950,7 +950,7 @@
       <div class="card-manage-add">
         <input type="text" id="cardManageAddInput" placeholder="새 카드 이름 입력">
         <div class="new-card-row-bottom">
-          <select id="cardManageAddTypeSelect" class="new-card-type-select">
+          <select id="cardManageAddTypeSelect" class="new-card-type-select" autocomplete="off">
             <option value="debit">체크카드</option>
             <option value="credit">신용카드</option>
           </select>
@@ -2212,8 +2212,23 @@
       else totals[e.cardName].expense += e.amount;
     });
 
+    // 위쪽 "결제수단" 필터와 맞춰서 보여준다 — 현금/특정 카드/신용·체크 전체를 고르면 그에 맞는 카드만 남기고,
+    // 필터가 '전체'일 때만 등록된 카드를 다 보여준다.
+    const f = state.pmFilter;
+    let names = Object.keys(totals);
+    if(f === 'cash' || f === '__card_unnamed__'){
+      names = [];
+    } else if(f === 'debit_all'){
+      names = names.filter(n => totals[n].type === 'debit');
+    } else if(f === 'credit_all'){
+      names = names.filter(n => totals[n].type === 'credit');
+    } else if(f && f !== 'all'){
+      names = names.filter(n => n === f); // a specific card name
+    }
+
     const debitRows = [], creditRows = [];
-    Object.entries(totals).forEach(([name, t]) => {
+    names.forEach(name => {
+      const t = totals[name];
       (t.type === 'debit' ? debitRows : creditRows).push({ name, ...t });
     });
     debitRows.sort((a,b) => a.name.localeCompare(b.name));
@@ -2228,7 +2243,7 @@
     `;
     const rows = [...debitRows, ...creditRows];
     const html = rows.length === 0
-      ? '<div class="cat-manage-empty">등록된 카드가 없어요.</div>'
+      ? '<div class="cat-manage-empty">해당하는 카드가 없어요.</div>'
       : rows.map(rowHtml).join('');
 
     if(chartEl) chartEl.innerHTML = html;
@@ -3709,6 +3724,11 @@
 
   async function init(){
     $('dateInput').value = todayStr();
+    // some browsers restore a select's last-picked value across reloads even with no
+    // explicit "selected" option — force these back to their intended default (체크카드)
+    // so a stale restored value never gets mistaken for what a saved card was set to.
+    $('newCardTypeSelect').value = 'debit';
+    $('cardManageAddTypeSelect').value = 'debit';
     if(!isStorageAvailable()){
       showToast('이 브라우저는 저장 기능을 막고 있어요 (시크릿 모드 등) — 기록이 저장되지 않을 수 있어요', 'error');
     }

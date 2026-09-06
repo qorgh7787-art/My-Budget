@@ -2055,17 +2055,26 @@
     if(!chartEl && !catEl) return;
 
     const ym = todayStr().slice(0,7);
-    let cardIncome=0, cardExpense=0, cashIncome=0, cashExpense=0;
+    let creditIncome=0, creditExpense=0, debitIncome=0, debitExpense=0, cashIncome=0, cashExpense=0;
     state.entries.forEach(e=>{
       if(e.date.slice(0,7) !== ym || e.isAdjustment) return;
-      const isCard = e.paymentMethod === 'card';
-      if(e.type === 'income'){ if(isCard) cardIncome += e.amount; else cashIncome += e.amount; }
-      else { if(isCard) cardExpense += e.amount; else cashExpense += e.amount; }
+      const cat = pmCategoryOf(e);
+      if(e.type === 'income'){
+        if(cat === 'credit') creditIncome += e.amount;
+        else if(cat === 'debit') debitIncome += e.amount;
+        else cashIncome += e.amount;
+      } else {
+        if(cat === 'credit') creditExpense += e.amount;
+        else if(cat === 'debit') debitExpense += e.amount;
+        else cashExpense += e.amount;
+      }
     });
 
     const html = `
-      <div class="pm-stat"><div class="l">카드 수입</div><div class="v income">${fmt(cardIncome)}</div></div>
-      <div class="pm-stat"><div class="l">카드 지출</div><div class="v expense">${fmt(cardExpense)}</div></div>
+      <div class="pm-stat"><div class="l">신용카드 수입</div><div class="v income">${fmt(creditIncome)}</div></div>
+      <div class="pm-stat"><div class="l">신용카드 지출</div><div class="v expense">${fmt(creditExpense)}</div></div>
+      <div class="pm-stat"><div class="l">체크카드 수입</div><div class="v income">${fmt(debitIncome)}</div></div>
+      <div class="pm-stat"><div class="l">체크카드 지출</div><div class="v expense">${fmt(debitExpense)}</div></div>
       <div class="pm-stat"><div class="l">현금 수입</div><div class="v income">${fmt(cashIncome)}</div></div>
       <div class="pm-stat"><div class="l">현금 지출</div><div class="v expense">${fmt(cashExpense)}</div></div>
     `;
